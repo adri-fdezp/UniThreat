@@ -1,14 +1,25 @@
-import React from 'react';
+/**
+ * Header.jsx — Application header bar
+ *
+ * Displays the application brand name and a live status indicator.
+ * The status pulses green while gathering or analysing.
+ *
+ * Props:
+ *   statusLabel {string}  - Current status text (e.g. "GATHERING 2/4")
+ *   isLive      {boolean} - Animates the status when true
+ */
+export default function Header({ statusLabel, isLive }) {
+  return (
+    <header className="header">
+      <div className="header-brand">
+        UNITHREAT <span>| INTELLIGENCE ENGINE</span>
+      </div>
 
-const Header = () => (
-  <header className="header">
-    <div style={{ fontWeight: 900, letterSpacing: '2px', color: '#58a6ff' }}>
-      UNITHREAT <span style={{ color: '#8b949e', fontWeight: 400 }}>| INTELLIGENCE_ENGINE</span>
-    </div>
-    <div style={{ fontSize: '11px', color: '#8b949e' }}>
-      v0.1.1
-    </div>
-  </header>
-);
+      <div className={`header-status ${isLive ? "live" : ""}`}>
+        {statusLabel}
+      </div>
 
-export default Header;
+      <div className="header-version">v2.0 · Aarhus University</div>
+    </header>
+  );
+}

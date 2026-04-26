@@ -14,12 +14,13 @@ class RiskProfiler:
     Clean slate: Basic Google Search only.
     """
 
-    # Basic starting strategy
+    # Targeted search strategies (Google Dorks)
     STRATEGIES = {
-        "google": (
-            "Google Search", 
-            '{target}'
-        )
+        "google_general": ("General", '"{target}"'),
+        "social": ("Social Media", '"{target}" site:linkedin.com OR site:twitter.com OR site:facebook.com OR site:instagram.com'),
+        "docs": ("Documents", '"{target}" ext:pdf OR ext:doc OR ext:docx OR ext:txt'),
+        "code": ("Code & Pastes", '"{target}" site:pastebin.com OR site:github.com OR site:gitlab.com'),
+        "contact": ("Contacts", '"{target}" (email OR contact OR phone OR "e-mail")')
     }
 
     def __init__(self):

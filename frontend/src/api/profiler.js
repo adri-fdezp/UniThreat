@@ -1,25 +1,66 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE = "http://localhost:5000/api";
 
 /**
- * Fetches the risk profile for a given target name and specific modules.
- * @param {string} targetName 
- * @param {Array} modules - e.g., ['social', 'docs']
- * @returns {Promise<Object>} The profile data.
+ * POST /api/gather — kick off parallel OSINT modules.
+ * Returns { session_id }.
  */
-export const getRiskProfile = async (targetName, modules = []) => {
-  const response = await fetch(`${API_BASE_URL}/profile`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      name: targetName,
-      modules: modules
+export async function startGathering(target, modules) {
+  const res = await fetch(`${API_BASE}/gather`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...target, modules }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || `Server error ${res.status}`);
+  }
+  return res.json();
+}
+
+/**
+ * GET /api/stream/:id — open an SSE connection.
+ * onUpdate(payload) is called for each module event.
+ * onComplete() is called when all modules finish.
+ * Returns the EventSource so the caller can close it.
+ */
+export function streamResults(sessionId, onUpdate, onComplete) {
+  const es = new EventSource(`${API_BASE}/stream/${sessionId}`);
+
+  es.onmessage = (e) => {
+    const payload = JSON.parse(e.data);
+    if (payload.event === "complete") {
+      onComplete();
+      es.close();
+    } else {
+      onUpdate(payload);
+    }
+  };
+
+  es.onerror = () => {
+    es.close();
+    onComplete();
+  };
+
+  return es;
+}
+
+/**
+ * POST /api/analyze — send curated items to Claude for attack vector analysis.
+ * Returns { analysis: string }.
+ */
+export async function analyzeData(targetInfo, curatedData, analysisType = "full") {
+  const res = await fetch(`${API_BASE}/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      target_info:   targetInfo,
+      curated_data:  curatedData,
+      analysis_type: analysisType,
     }),
   });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || `Server responded with ${response.status}`);
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || `Analysis failed ${res.status}`);
   }
-
-  return response.json();
-};
+  return res.json();
+}

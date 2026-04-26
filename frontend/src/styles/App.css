@@ -1,164 +1,582 @@
+/* =============================================================================
+   UniThreat — Global Stylesheet
+   Master's Thesis · Aarhus University · Security Research
+
+   Dark OSINT workbench theme.  Design tokens are defined as CSS custom
+   properties so colours can be updated in one place without touching
+   component markup.
+   ============================================================================= */
+
+/* ── Design tokens ────────────────────────────────────────────────────────── */
 :root {
-  --bg-main: #0f111a;
-  --bg-side: #1a1c2e;
-  --bg-card: #1e2036;
-  --border: #2d314d;
-  --text: #e6edf3;
-  --text-dim: #8b949e;
-  --accent: #58a6ff;
-  --error: #ff7b72;
-  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --bg-main:  #0d0f1a;   /* page background           */
+  --bg-side:  #12152a;   /* sidebar / header panels   */
+  --bg-card:  #1a1d32;   /* card and input background */
+  --bg-hover: #1e2240;   /* card hover state          */
+  --border:   #2a2e4a;   /* default border colour     */
+  --text:     #e6edf3;   /* primary text              */
+  --text-dim: #7d8590;   /* secondary / muted text    */
+  --accent:   #58a6ff;   /* brand blue — links, focus */
+  --green:    #3fb950;   /* success / done            */
+  --yellow:   #d29922;   /* warning / running         */
+  --red:      #f85149;   /* error / danger            */
+  --purple:   #bc8cff;   /* username module badge     */
+  --font:     'Inter', system-ui, -apple-system, sans-serif;
 }
 
-body, html, #root {
-  height: 100%;
+/* ── Box-model reset ──────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
+}
+
+/*
+  Full-page layout requirement:
+  html → body → #root must all be 100 % height, with overflow hidden,
+  so that the three-panel workspace fills the viewport exactly.
+*/
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   background: var(--bg-main);
   color: var(--text);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-.app-container {
-  height: 100vh;
+#root {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* Header */
-.header {
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border);
+/* ── App shell ────────────────────────────────────────────────────────────── */
+.app-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--bg-side);
-}
-
-.workspace {
-  display: flex;
-  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
-/* Sidebar */
-.sidebar {
-  width: 260px;
-  background: var(--bg-side);
-  border-right: 1px solid var(--border);
-  padding: 20px;
+/* ── Header bar ───────────────────────────────────────────────────────────── */
+.header {
   display: flex;
-  flex-direction: column;
-  gap: 30px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 46px;
+  flex-shrink: 0;
+  background: var(--bg-side);
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
 }
 
-.section-label {
+.header-brand {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.header-brand span { color: var(--text-dim); font-weight: 400; }
+
+.header-status {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-dim);
   letter-spacing: 1px;
-  margin-bottom: 10px;
-  display: block;
+}
+.header-status.live { color: var(--green); animation: pulse 1.5s infinite; }
+
+.header-version { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+
+/* ── Three-panel workspace ────────────────────────────────────────────────── */
+/*
+  Layout:  [left sidebar 220 px] [main content flex-1] [right sidebar 320 px]
+  .workspace fills the remaining viewport height beneath the header.
+  min-height: 0 on the flex child allows nested scroll regions to work.
+*/
+.workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.module-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+/* ── Sidebar panels ───────────────────────────────────────────────────────── */
+.sidebar, .notes-sidebar {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  background: var(--bg-side);
+  overflow: hidden;
 }
 
-.mod-toggle {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  padding: 8px;
-  font-size: 11px;
-  font-weight: bold;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
+.sidebar       { width: 220px; border-right: 1px solid var(--border); }
+.notes-sidebar { width: 320px; border-left:  1px solid var(--border); }
 
-.mod-toggle.active {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(88, 166, 255, 0.1);
-}
-
-.status-indicator {
-  color: var(--accent);
-  font-weight: bold;
-  font-size: 12px;
-}
-
-.status-indicator.loading {
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse { 50% { opacity: 0.5; } }
-
-/* Main Content */
+/* ── Centre content area ──────────────────────────────────────────────────── */
 .main-content {
   flex: 1;
-  overflow-y: auto;
-  padding: 30px;
-}
-
-.results-toolbar {
+  min-width: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--border);
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-main);
 }
 
-.minimal-filter {
+/* ── Scrollable wrappers inside each panel ────────────────────────────────── */
+/*
+  Each panel has a fixed (non-scrolling) header section and a scrollable body.
+  These three classes are applied to the scrollable body containers.
+*/
+.sidebar-scroll, .results-scroll, .dossier-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 12px;
+}
+
+.sidebar-scroll { display: flex; flex-direction: column; gap: 18px; }
+.results-scroll { display: flex; flex-direction: column; gap: 8px;  }
+.dossier-scroll { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Typography helpers ───────────────────────────────────────────────────── */
+.section-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--text-dim);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* ── Target input form ────────────────────────────────────────────────────── */
+.search-form { display: flex; flex-direction: column; gap: 6px; }
+
+.input-field {
+  width: 100%;
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 8px 15px;
-  border-radius: 20px;
-  width: 300px;
+  padding: 7px 9px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input-field:focus        { border-color: var(--accent); }
+.input-field::placeholder { color: var(--text-dim); font-size: 11px; }
+.input-field:disabled     { opacity: 0.5; }
+
+.execute-btn {
+  width: 100%;
+  padding: 9px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: inherit;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  margin-top: 2px;
+}
+.execute-btn:disabled             { opacity: 0.4; cursor: not-allowed; }
+.execute-btn:hover:not(:disabled) { filter: brightness(1.1); }
+
+.reset-btn {
+  width: 100%;
+  padding: 7px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 5px;
+  font-size: 10px;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 2px;
+}
+.reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* ── Module selection toggles ─────────────────────────────────────────────── */
+.module-list { display: flex; flex-direction: column; gap: 5px; }
+
+.module-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.5px;
+  transition: all 0.15s;
+  width: 100%;
+}
+.module-toggle.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(88, 166, 255, 0.07);
+}
+.module-toggle-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.module-toggle.active .module-toggle-dot { background: var(--accent); }
+
+/* ── Per-module run status ────────────────────────────────────────────────── */
+/* Shown in the sidebar during and after the gathering phase */
+.module-progress     { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.module-progress-row { display: flex; align-items: center; gap: 7px; font-size: 10px; color: var(--text-dim); }
+
+.dot         { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+.dot.running { background: var(--yellow); animation: pulse 1s infinite; }
+.dot.done    { background: var(--green); }
+.dot.error   { background: var(--red); }
+
+/* ── Sidebar status block ─────────────────────────────────────────────────── */
+/* margin-top: auto pins this block to the bottom of the flex sidebar */
+.status-block { margin-top: auto; padding: 12px; border-top: 1px solid var(--border); }
+.status-text  { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: 0.8px; }
+.status-text.pulse { animation: pulse 1.5s infinite; }
+
+/* ── Results toolbar ──────────────────────────────────────────────────────── */
+/* Fixed bar above the scrollable results list — contains the text filter */
+.results-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-side);
+  flex-shrink: 0;
 }
 
-.minimal-filter:focus { outline: none; border-color: var(--accent); }
-
-.hit-count { font-size: 12px; color: var(--text-dim); }
-
-/* Dashboard Cards */
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
-}
-
-.data-card {
+.filter-input {
+  flex: 1;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 15px;
-  transition: transform 0.2s;
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+}
+.filter-input:focus        { border-color: var(--accent); }
+.filter-input::placeholder { color: var(--text-dim); }
+
+.result-count { font-size: 10px; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+
+/* ── Individual result cards ──────────────────────────────────────────────── */
+/*
+  Each search hit from any module is rendered as a self-contained ResultCard.
+  When a card is pinned to the Intel Workspace the .pinned class is applied.
+*/
+.result-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 12px 14px;
+  display: flex;
+  gap: 12px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.result-card:hover  { border-color: rgba(88, 166, 255, 0.35); background: var(--bg-hover); }
+.result-card.pinned { border-color: var(--accent); background: rgba(88, 166, 255, 0.05); }
+
+.result-card-main { flex: 1; min-width: 0; }
+
+.result-card-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+
+/* Colour-coded badge identifies which OSINT module produced the result */
+.result-module-badge {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(88, 166, 255, 0.15);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.result-module-badge.google      { background: rgba(234, 179,   8, 0.15); color: #eab308; }
+.result-module-badge.duckduckgo  { background: rgba(255, 165,   0, 0.12); color: #ffa500; }
+.result-module-badge.github      { background: rgba( 63, 185,  80, 0.15); color: var(--green); }
+.result-module-badge.reddit      { background: rgba(255,  69,   0, 0.15); color: #ff6314; }
+.result-module-badge.instagram   { background: rgba(188,  62, 167, 0.15); color: #e040fb; }
+.result-module-badge.username_enum { background: rgba(188, 140, 255, 0.15); color: var(--purple); }
+.result-module-badge.email_osint { background: rgba(248,  81,  73, 0.15); color: var(--red); }
+
+.result-category { font-size: 9px; color: var(--text-dim); font-weight: 600; }
+
+.result-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
 }
 
-.data-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.result-card-url {
+  font-size: 10px;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+  text-decoration: none;
+  display: block;
+}
+.result-card-url:hover { text-decoration: underline; }
 
-.card-header { font-size: 11px; color: var(--accent); margin-bottom: 10px; display: flex; justify-content: space-between; }
+.result-card-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
-.card-content-wrapper { display: flex; gap: 12px; }
+/* Pin button — sends the card to the Intel Workspace */
+.pin-btn {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all 0.15s;
+  line-height: 1;
+}
+.pin-btn:hover      { border-color: var(--accent); color: var(--accent); }
+.pin-btn.pinned-btn { border-color: var(--accent); color: var(--accent); background: rgba(88, 166, 255, 0.1); }
 
-.profile-thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; background: #000; }
+/* ── Empty / loading states ───────────────────────────────────────────────── */
+.empty-results {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 20px;
+}
+.empty-results-title { font-size: 22px; font-weight: 900; color: var(--accent); letter-spacing: 3px; }
+.empty-results-sub   { font-size: 11px; line-height: 1.7; max-width: 340px; }
 
-.card-title { color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; display: block; margin-bottom: 5px; }
+/* Step-by-step guide shown on the welcome screen */
+.step-guide {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  max-width: 320px;
+  width: 100%;
+}
+.step-guide-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.step-guide-num {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--accent);
+  background: rgba(88, 166, 255, 0.12);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
 
-.card-body { font-size: 12px; color: var(--text-dim); margin: 0; line-height: 1.5; }
+/* Spinner used for both gathering and analysis loading states */
+.spinner-ring {
+  width: 28px; height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
 
-.card-footer { margin-top: 15px; font-size: 10px; color: #444; word-break: break-all; }
+/* ── Intel Workspace (right panel) ───────────────────────────────────────── */
+.workspace-section { display: flex; flex-direction: column; gap: 6px; }
 
-.empty-state { text-align: center; margin-top: 100px; color: var(--text-dim); font-weight: 600; letter-spacing: 1px; }
+.workspace-textarea {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.workspace-textarea:focus        { border-color: var(--accent); }
+.workspace-textarea::placeholder { color: var(--text-dim); font-size: 10px; }
 
-/* Search Form */
-.search-form { display: flex; gap: 5px; }
-.input-field { flex: 1; background: var(--bg-card); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 4px; }
-.search-btn { background: var(--accent); color: #000; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
-.error-banner { background: rgba(255, 123, 114, 0.1); border: 1px solid var(--error); color: var(--error); padding: 10px; border-radius: 4px; margin-bottom: 20px; }
+/* Pinned result chips */
+.pinned-list { display: flex; flex-direction: column; gap: 5px; }
+
+.pinned-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-size: 10px;
+  min-width: 0;
+}
+.pinned-chip-text  { flex: 1; min-width: 0; }
+.pinned-chip-title { color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pinned-chip-meta  { font-size: 9px; color: var(--text-dim); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.unpin-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  line-height: 1;
+}
+.unpin-btn:hover { color: var(--red); }
+
+.empty-workspace {
+  text-align: center;
+  padding: 20px;
+  font-size: 10px;
+  color: var(--text-dim);
+  border: 1px dashed var(--border);
+  border-radius: 5px;
+  line-height: 1.7;
+}
+
+/* ── Analysis controls ────────────────────────────────────────────────────── */
+.analysis-type-select {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+}
+
+.generate-btn {
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(135deg, #58a6ff, #bc8cff);
+  color: #000;
+  border: none;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: inherit;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+}
+.generate-btn:disabled             { background: var(--border); color: var(--text-dim); cursor: not-allowed; }
+.generate-btn:hover:not(:disabled) { filter: brightness(1.08); }
+
+/* ── AI analysis output ───────────────────────────────────────────────────── */
+.analysis-out { display: flex; flex-direction: column; gap: 10px; }
+
+.analysis-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.analysis-section-title {
+  padding: 7px 12px;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(88, 166, 255, 0.06);
+}
+.analysis-section-body {
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+
+.copy-btn {
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 5px;
+  font-size: 10px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Utility ──────────────────────────────────────────────────────────────── */
+.error-banner {
+  margin: 0 16px 10px;
+  padding: 9px 13px;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid var(--red);
+  border-radius: 5px;
+  color: var(--red);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.panel-divider { border: none; border-top: 1px solid var(--border); }
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes pulse { 50% { opacity: 0.35; } }
+@keyframes spin  { to  { transform: rotate(360deg); } }

@@ -1,32 +1,59 @@
-import React, { useState } from 'react';
+import { useState } from "react";
 
-const SearchForm = ({ onSearch, isLoading }) => {
-  const [targetName, setTargetName] = useState('');
+export default function SearchForm({ onSearch, isLoading, onReset }) {
+  const [name,     setName]     = useState("");
+  const [username, setUsername] = useState("");
+  const [email,    setEmail]    = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (targetName.trim()) {
-      onSearch(targetName);
-    }
+    if (!name.trim()) return;
+    onSearch({ name: name.trim(), username: username.trim(), email: email.trim() });
   };
 
-  return (
-    <div className="search-section">
-      <form onSubmit={handleSubmit} className="search-form">
-        <input
-          type="text"
-          placeholder="Search target..."
-          value={targetName}
-          onChange={(e) => setTargetName(e.target.value)}
-          className="input-field"
-          disabled={isLoading}
-        />
-        <button type="submit" className="search-btn" disabled={isLoading || !targetName.trim()}>
-          {isLoading ? '...' : 'EXECUTE'}
-        </button>
-      </form>
-    </div>
-  );
-};
+  const locked = isLoading || !!onReset;
 
-export default SearchForm;
+  return (
+    <form onSubmit={handleSubmit} className="search-form">
+      <input
+        type="text"
+        className="input-field"
+        placeholder="Full name *"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        disabled={locked}
+        required
+      />
+      <input
+        type="text"
+        className="input-field"
+        placeholder="@username / handle (optional)"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        disabled={locked}
+      />
+      <input
+        type="email"
+        className="input-field"
+        placeholder="email@example.com (optional)"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={locked}
+      />
+
+      {onReset ? (
+        <button type="button" className="reset-btn" onClick={onReset}>
+          ← NEW SEARCH
+        </button>
+      ) : (
+        <button
+          type="submit"
+          className="execute-btn"
+          disabled={isLoading || !name.trim()}
+        >
+          {isLoading ? "GATHERING…" : "EXECUTE"}
+        </button>
+      )}
+    </form>
+  );
+}
