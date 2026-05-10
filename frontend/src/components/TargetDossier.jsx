@@ -53,6 +53,8 @@ export default function TargetDossier({
   onNotesChange,
   analysisType,
   onAnalysisTypeChange,
+  aiProvider,
+  onAiProviderChange,
   onGenerate,
   isAnalyzing,
   analysis,
@@ -139,16 +141,27 @@ export default function TargetDossier({
         {/* ── 3. Analysis type + Generate ── */}
         <div className="workspace-section">
           <label className="section-label">ATTACK VECTOR ANALYSIS</label>
-          <select
-            className="analysis-type-select"
-            value={analysisType}
-            onChange={(e) => onAnalysisTypeChange(e.target.value)}
-            style={{ marginBottom: 8 }}
-          >
-            <option value="full">Full Threat Assessment</option>
-            <option value="phishing">Phishing Focus</option>
-            <option value="social_engineering">Social Engineering</option>
-          </select>
+          <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+            <select
+              className="analysis-type-select"
+              value={analysisType}
+              onChange={(e) => onAnalysisTypeChange(e.target.value)}
+              style={{ flex: 1, marginBottom: 0 }}
+            >
+              <option value="full">Full Assessment</option>
+              <option value="phishing">Phishing Focus</option>
+              <option value="social_engineering">SocEng Focus</option>
+            </select>
+            <select
+              className="analysis-type-select"
+              value={aiProvider}
+              onChange={(e) => onAiProviderChange(e.target.value)}
+              style={{ width: 90, marginBottom: 0 }}
+            >
+              <option value="claude">CLAUDE</option>
+              <option value="gemini">GEMINI</option>
+            </select>
+          </div>
           <button
             className="generate-btn"
             onClick={onGenerate}

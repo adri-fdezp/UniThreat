@@ -170,6 +170,7 @@ def analyze():
             target_info=data.get("target_info", {}),
             curated_data=data.get("curated_data", []),
             analysis_type=data.get("analysis_type", "full"),
+            provider=data.get("provider", "claude"),
         )
         return jsonify({"analysis": result})
     except Exception as exc:

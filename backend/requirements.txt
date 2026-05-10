@@ -6,3 +6,4 @@ instaloader
 anthropic
 holehe
 python-dotenv
+google-generativeai

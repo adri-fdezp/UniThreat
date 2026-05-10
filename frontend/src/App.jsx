@@ -178,6 +178,7 @@ export default function App() {
   const [pinnedItems,     setPinnedItems]     = useState([]);   // items sent to workspace
   const [notes,           setNotes]           = useState("");   // analyst free-text notes
   const [analysisType,    setAnalysisType]    = useState("full");
+  const [aiProvider,      setAiProvider]      = useState("claude");
   const [isAnalyzing,     setIsAnalyzing]     = useState(false);
   const [analysis,        setAnalysis]        = useState(null);
   const [error,           setError]           = useState(null);
@@ -263,10 +264,10 @@ export default function App() {
           label: "Analyst Notes", content: notes.trim(),
         });
       }
-      const data = await analyzeData(target, curatedData, analysisType);
+      const data = await analyzeData(target, curatedData, analysisType, aiProvider);
       setAnalysis(data.analysis);
     } catch (err) {
-      setError(err.message || "Analysis failed — check the ANTHROPIC_API_KEY is set.");
+      setError(err.message || "Analysis failed — check the API keys are set.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -419,6 +420,8 @@ export default function App() {
           onNotesChange={setNotes}
           analysisType={analysisType}
           onAnalysisTypeChange={setAnalysisType}
+          aiProvider={aiProvider}
+          onAiProviderChange={setAiProvider}
           onGenerate={handleAnalyze}
           isAnalyzing={isAnalyzing}
           analysis={analysis}

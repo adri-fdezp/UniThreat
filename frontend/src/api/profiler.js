@@ -48,7 +48,7 @@ export function streamResults(sessionId, onUpdate, onComplete) {
  * POST /api/analyze — send curated items to Claude for attack vector analysis.
  * Returns { analysis: string }.
  */
-export async function analyzeData(targetInfo, curatedData, analysisType = "full") {
+export async function analyzeData(targetInfo, curatedData, analysisType = "full", provider = "claude") {
   const res = await fetch(`${API_BASE}/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -56,6 +56,7 @@ export async function analyzeData(targetInfo, curatedData, analysisType = "full"
       target_info:   targetInfo,
       curated_data:  curatedData,
       analysis_type: analysisType,
+      provider:      provider,
     }),
   });
   if (!res.ok) {

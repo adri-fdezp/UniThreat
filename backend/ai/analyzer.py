@@ -3,10 +3,9 @@
 # Claude returns a structured threat report with phishing scenarios,
 # social engineering vectors, and a risk rating.
 
-from ai.client import get_client
+from ai.client import get_anthropic_client, get_gemini_client
 
-# System prompt that tells Claude what role to play and how to format the output.
-# Changing this will change the structure of the generated report.
+# System prompt that tells the AI what role to play and how to format the output.
 SYSTEM_PROMPT = """\
 You are a cybersecurity research assistant supporting an academic OSINT thesis at Aarhus University.
 Your task: analyse OSINT-gathered open-source data about a target and produce a structured threat assessment
@@ -46,21 +45,37 @@ Overall social engineering susceptibility: LOW / MEDIUM / HIGH
 
 
 class AttackVectorAnalyzer:
-    """Sends curated OSINT data to Claude and returns a threat assessment report."""
+    """Sends curated OSINT data to Claude or Gemini and returns a threat assessment report."""
 
-    def __init__(self):
-        self.client = get_client()
-
-    def analyze(self, target_info: dict, curated_data: list, analysis_type: str = "full") -> str:
-        """Build the prompt and call the Claude API."""
+    def analyze(self, target_info: dict, curated_data: list, analysis_type: str = "full", provider: str = "claude") -> str:
+        """Build the prompt and call the selected AI API."""
         prompt = self._build_prompt(target_info, curated_data, analysis_type)
-        message = self.client.messages.create(
+        
+        if provider == "gemini":
+            return self._analyze_gemini(prompt)
+        else:
+            return self._analyze_claude(prompt)
+
+    def _analyze_claude(self, prompt: str) -> str:
+        """Call the Anthropic Claude API."""
+        client = get_anthropic_client()
+        message = client.messages.create(
             model="claude-opus-4-7",
             max_tokens=4096,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
         )
         return message.content[0].text
+
+    def _analyze_gemini(self, prompt: str) -> str:
+        """Call the Google Gemini API."""
+        genai = get_gemini_client()
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-pro",
+            system_instruction=SYSTEM_PROMPT
+        )
+        response = model.generate_content(prompt)
+        return response.text
 
     def _build_prompt(self, target_info: dict, curated_data: list, analysis_type: str) -> str:
         """Format the target info and pinned OSINT cards into a single prompt."""
