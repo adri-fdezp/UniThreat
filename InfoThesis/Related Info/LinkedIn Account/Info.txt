@@ -1,0 +1,111 @@
+PROFILE: JULIAN VANE
+STATUS: ACTIVE OSINT / SEO RECRUITER PERSONA
+NICHES: Quantitative Finance, High-Frequency Trading (HFT), Machine Learning
+
+1. BASIC INFORMATION
+First Name: Julian
+
+Last Name: Vane
+
+Location: London, United Kingdom (Note: Relocated from Copenhagen; London provides better SEO indexing for global finance/tech).
+
+Industry: Staffing and Recruiting
+
+Custom URL: https://www.linkedin.com/in/julian-vane/
+
+2. HEADLINE (SEO OPTIMIZED)
+Senior Talent Partner | Specialized in HFT, Deep Learning, & Infrastructure | Market Intelligence & Executive Search
+
+3. ABOUT / SUMMARY
+I don't just fill seats; I map ecosystems.
+
+Originally from Copenhagen and now based in London, I bring over 8 years of experience in the boutique executive search space. I specialize in identifying the top 1% of engineering and research talent within High-Frequency Trading (HFT) and Applied AI. My approach is highly data-driven, focusing on organizational design, competitive benchmarking, and discrete market intelligence.
+
+Core Focus Areas:
+
+Tech Stack Mapping: C++, Rust, Python (PyTorch/TensorFlow).
+
+Niche Markets: Low-latency infrastructure and Generative AI scaling.
+
+Intelligence: Specialized in departmental restructuring, stealth-mode scaling, and global compensation benchmarking.
+
+Whether you are looking to understand where the market is moving, benchmarking your current team's structure, or need a discrete partner for executive-level growth, let's connect.
+
+4. EXPERIENCE
+ROLE 1 (CURRENT)
+
+Title: Senior Talent Partner
+
+Company: Vane & Associates (Self-Employed / Boutique Search)
+
+Location: London, United Kingdom (Hybrid)
+
+Dates: Jan 2022 – Present
+
+Description:
+
+Lead end-to-end discrete recruitment for mid-to-senior level engineering and quantitative research roles across EMEA and the US.
+
+Conduct deep-dive market mapping and OSINT to identify emerging talent clusters in proprietary trading and AI research.
+
+Advise Tier-1 funds and Series B/C startups on competitor team structures and "tech-stack migration" trends.
+
+ROLE 2 (PAST)
+
+Title: Principal Technical Recruiter
+
+Company: Nordic Tech Search (or use a real agency like Nigel Frank / Hays)
+
+Location: Copenhagen, Capital Region, Denmark
+
+Dates: May 2017 – Dec 2021
+
+Description:
+
+Focused on the "Quant & Architecture" desk, building foundational relationships with developers and researchers across the Nordics and UK.
+
+Managed a high-volume pipeline while maintaining a 92% retention rate for executive placements.
+
+Piloted an internal market intelligence initiative to track talent movement from academia into private sector tech.
+
+5. EDUCATION
+School: Copenhagen Business School (CBS)
+
+Degree: Bachelor of Science (BSc) in Business Administration and Organizational Communication
+
+Dates: 2013 - 2016
+
+Activities: Behavioral Economics Society, Tech Startup Incubator.
+
+6. SKILLS & ENDORSEMENTS (ADD ALL FOR SEO)
+Market Intelligence
+
+Executive Search
+
+Technical Recruiting
+
+Boolean Search
+
+Open Source Intelligence (OSINT)
+
+Organizational Design
+
+Talent Mapping
+
+Benchmarking
+
+High-Frequency Trading (HFT)
+
+Machine Learning
+
+C++
+
+Python
+
+7. INITIAL SETUP CHECKLIST (DO NOT POST ON LINKEDIN)
+[ ] Upload realistic headshot (use the generated image or an Unsplash photo).
+[ ] Upload a banner image (e.g., London or Copenhagen skyline, or a clean geometric background).
+[ ] Turn OFF "Share profile updates with your network" before making initial edits so you don't spam the feed while building the profile.
+[ ] Follow 15 target companies (e.g., Citadel, Jane Street, DeepMind, OpenAI).
+[ ] Connect with 5 "LIONs" (LinkedIn Open Networkers) to seed the connection count.
+[ ] Set Profile Viewing Options to "Your Name and Headline" to trigger reciprocal profile views.

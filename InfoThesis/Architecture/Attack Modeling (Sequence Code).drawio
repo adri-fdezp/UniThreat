@@ -1,0 +1,81 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.4.0">
+  <diagram name="Page-1" id="hNbqOHiL1H7aWCGPgAAl">
+    <mxGraphModel dx="1213" dy="736" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-1" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;" value="React Frontend" vertex="1">
+          <mxGeometry height="576" width="150" x="20" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-2" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;" value="FastAPI" vertex="1">
+          <mxGeometry height="576" width="150" x="316" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-3" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;" value="OSINT Module" vertex="1">
+          <mxGeometry height="576" width="150" x="552" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-4" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;" value=" DB (Global CTI)" vertex="1">
+          <mxGeometry height="576" width="177" x="752" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-5" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=65;" value="Llama-3 (Analyst)" vertex="1">
+          <mxGeometry height="576" width="150" x="979" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-6" edge="1" parent="1" source="EUPJPCTmdIdowfT0m4-B-1" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;" target="EUPJPCTmdIdowfT0m4-B-2" value="Input Identifier (e.g., Handle)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="252" y="127" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-7" edge="1" parent="1" source="EUPJPCTmdIdowfT0m4-B-2" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;" target="EUPJPCTmdIdowfT0m4-B-3" value="Aggregate Public Data">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="518" y="179" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-8" edge="1" parent="1" source="EUPJPCTmdIdowfT0m4-B-3" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;dashPattern=2 3;endArrow=block;" target="EUPJPCTmdIdowfT0m4-B-2" value="Return Digital Footprint">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="521" y="231" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-9" edge="1" parent="1" source="EUPJPCTmdIdowfT0m4-B-2" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;" target="EUPJPCTmdIdowfT0m4-B-4" value="Query: &quot;Active threats matching [Footprint Context]&quot;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="624" y="283" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-10" edge="1" parent="1" source="EUPJPCTmdIdowfT0m4-B-4" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;dashPattern=2 3;endArrow=block;" target="EUPJPCTmdIdowfT0m4-B-2" value="Return Relevant IoCs &amp; Campaigns">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="627" y="335" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-11" edge="1" parent="1" source="EUPJPCTmdIdowfT0m4-B-2" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;endArrow=block;" target="EUPJPCTmdIdowfT0m4-B-5" value="Correlate and calculate Exposure Score">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="731" y="387" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-12" edge="1" parent="1" source="EUPJPCTmdIdowfT0m4-B-5" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;dashPattern=2 3;endArrow=block;" target="EUPJPCTmdIdowfT0m4-B-2" value="Result: &quot;High Risk of Spear Phishing&quot;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="734" y="439" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EUPJPCTmdIdowfT0m4-B-13" edge="1" parent="1" source="EUPJPCTmdIdowfT0m4-B-2" style="verticalAlign=bottom;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;dashPattern=2 3;endArrow=block;" target="EUPJPCTmdIdowfT0m4-B-1" value="Display Personalized Risk Profile">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="255" y="491" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
