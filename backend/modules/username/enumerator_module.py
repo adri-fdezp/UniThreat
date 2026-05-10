@@ -1,53 +1,24 @@
-"""
-Username enumeration module.
-
-Uses the WhatsMyName (WMN) dataset — a community-maintained JSON registry of
-500+ websites — to check whether a target username exists on each site.
-
-Detection method
-----------------
-For each site in the dataset, the module:
-    1. Constructs the profile URL using the site's ``uri_check`` template.
-    2. Makes an HTTP GET request with a standard browser User-Agent.
-    3. Checks whether the response HTTP status code matches ``e_code`` AND
-       whether the ``e_string`` marker appears in the response body.
-    4. If both conditions are met, the account is considered found.
-
-Performance
------------
-All site checks run concurrently using a ``ThreadPoolExecutor`` (40 workers),
-keeping total runtime under ~60 seconds for ~500 sites.
-The WMN dataset is downloaded once and cached at module level for the lifetime
-of the process — subsequent runs reuse the cached data.
-
-Required target field : ``username``
-
-Dataset source
---------------
-https://github.com/WebBreacher/WhatsMyName
-"""
+# Username Enumeration Module
+# Checks whether a username exists on 500+ websites using the WhatsMyName dataset.
+# The dataset is a community-maintained JSON file that maps site names to
+# the URL pattern and the string that appears when a profile is found.
+#
+# All site checks run in parallel (40 threads) to keep total time under ~60s.
+# The dataset is cached in memory after the first download.
 
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from modules.base import BaseModule
 
-WMN_DATA_URL = (
-    "https://raw.githubusercontent.com/WebBreacher/WhatsMyName/main/wmn-data.json"
-)
+# WhatsMyName dataset — updated regularly by the community
+WMN_DATA_URL = "https://raw.githubusercontent.com/WebBreacher/WhatsMyName/main/wmn-data.json"
 
-# Module-level cache — the dataset is ~500 KB and changes infrequently
+# Cache the dataset after the first download so re-runs are instant
 _wmn_cache = None
 
 
 def _load_wmn_data() -> dict:
-    """Download and cache the WhatsMyName dataset.
-
-    Returns:
-        Parsed JSON dict from the WMN repository.
-
-    Raises:
-        requests.HTTPError: If the dataset cannot be retrieved.
-    """
+    """Download the WhatsMyName dataset (or return the cached copy)."""
     global _wmn_cache
     if _wmn_cache is None:
         r = requests.get(WMN_DATA_URL, timeout=30)
@@ -57,14 +28,9 @@ def _load_wmn_data() -> dict:
 
 
 def _check_site(site: dict, username: str):
-    """Check whether a username exists on a single site.
-
-    Args:
-        site:     One entry from the WMN ``sites`` array.
-        username: The target username to probe.
-
-    Returns:
-        Dict ``{ site, category, url }`` if found, else ``None``.
+    """
+    Check if a username exists on one site.
+    Returns a result dict if found, or None if not found / error.
     """
     url = site.get("uri_check", "").format(account=username)
     if not url:
@@ -76,6 +42,7 @@ def _check_site(site: dict, username: str):
             headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
             allow_redirects=True,
         )
+        # A profile is confirmed only if BOTH the status code and marker string match
         if (
             r.status_code == site.get("e_code", 200)
             and site.get("e_string", "") in r.text
@@ -92,31 +59,11 @@ def _check_site(site: dict, username: str):
 
 
 class UsernameEnumerator(BaseModule):
-    """OSINT module for cross-platform username enumeration.
-
-    Attributes:
-        name (str): Module identifier — ``"username_enum"``.
-    """
+    """Checks the target username against 500+ sites concurrently."""
 
     name = "username_enum"
 
     def run(self, target: dict) -> dict:
-        """Check the target username against 500+ sites concurrently.
-
-        Args:
-            target: Dict with keys ``name``, ``username``, ``email``.
-                    Only ``username`` is used.
-
-        Returns:
-            Dict with keys:
-                - ``username``      (str)  — The checked username
-                - ``total_found``   (int)  — Number of confirmed profiles
-                - ``total_checked`` (int)  — Number of sites tested
-                - ``by_category``   (dict) — Results grouped by site category
-                - ``profiles``      (list) — All results sorted alphabetically
-            Or ``{ "error": str }`` if ``username`` is missing or the dataset
-            cannot be loaded.
-        """
         username = target.get("username", "")
         if not username:
             return {"error": "No username provided for enumeration."}
@@ -129,7 +76,7 @@ class UsernameEnumerator(BaseModule):
         sites = wmn.get("sites", [])
         found = []
 
-        # Concurrent site checks — 40 workers balances speed vs. rate-limiting
+        # Check all sites in parallel — 40 workers is a good balance of speed vs. rate limits
         with ThreadPoolExecutor(max_workers=40) as executor:
             futures = {executor.submit(_check_site, s, username): s for s in sites}
             for future in as_completed(futures):
@@ -137,7 +84,7 @@ class UsernameEnumerator(BaseModule):
                 if result:
                     found.append(result)
 
-        # Group results by site category (Social Media, Gaming, Coding, etc.)
+        # Group confirmed profiles by site category (Social, Gaming, Coding, etc.)
         by_category: dict[str, list] = {}
         for item in found:
             cat = item["category"]

@@ -1,28 +1,12 @@
-"""
-Instagram OSINT module.
-
-Uses the ``instaloader`` library to retrieve publicly available data without
-requiring an Instagram account, API key, or login credentials.
-Only public information is collected — private accounts yield profile metadata
-only (follower count, bio, etc.) and no post data.
-
-Collects
---------
-- Public profile  : full name, biography, follower/following counts,
-                    post count, verification status, external URL,
-                    business category
-- Recent posts    : up to 15 most recent posts including caption text,
-                    hashtags, mentions, geolocation, like count, and date
-
-Note: Instagram applies rate-limiting to unauthenticated requests.
-      If throttled, instaloader raises an exception which is caught and
-      returned as ``{ "error": "..." }`` so the frontend can display it.
-
-Required target field : ``username``
-"""
+# Instagram OSINT Module
+# Scrapes public Instagram profiles using the instaloader library.
+# No login or API key needed — only works on public accounts.
+# Private accounts will still return basic profile info (bio, followers)
+# but no posts.
 
 from modules.base import BaseModule
 
+# Try importing instaloader — if it's not installed, the module returns a helpful error
 try:
     import instaloader
     _INSTALOADER_OK = True
@@ -31,31 +15,11 @@ except ImportError:
 
 
 class InstagramModule(BaseModule):
-    """OSINT module for public Instagram profiles.
-
-    Attributes:
-        name (str): Module identifier — ``"instagram"``.
-    """
+    """Fetches public Instagram profile data and recent posts."""
 
     name = "instagram"
 
     def run(self, target: dict) -> dict:
-        """Fetch public Instagram profile and recent post data.
-
-        Args:
-            target: Dict with keys ``name``, ``username``, ``email``.
-                    Only ``username`` is used by this module.
-
-        Returns:
-            Dict with profile and post data, or ``{"error": str}`` on failure.
-
-            Keys on success:
-                - ``username``, ``full_name``, ``biography``
-                - ``followers``, ``following``, ``posts_count``
-                - ``is_private``, ``is_verified``
-                - ``external_url``, ``business_category``, ``profile_pic_url``
-                - ``recent_posts`` — list of post dicts (empty if private)
-        """
         username = target.get("username", "")
 
         if not username:
@@ -64,7 +28,7 @@ class InstagramModule(BaseModule):
             return {"error": "instaloader not installed. Run: pip install instaloader"}
 
         try:
-            # Initialise instaloader in metadata-only mode (no downloads)
+            # Set up instaloader in metadata-only mode (no file downloads)
             L = instaloader.Instaloader(
                 quiet=True,
                 download_pictures=False,
@@ -93,7 +57,7 @@ class InstagramModule(BaseModule):
                             "url":      f"https://www.instagram.com/p/{post.shortcode}/",
                         })
                 except Exception:
-                    pass  # Rate-limited or unexpectedly private — return empty list
+                    pass  # rate-limited or unexpectedly private — return empty list
 
             return {
                 "username":          profile.username,

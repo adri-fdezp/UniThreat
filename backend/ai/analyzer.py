@@ -1,35 +1,12 @@
-"""
-AI Attack Vector Analyzer.
-
-Formats curated OSINT data into a structured prompt and sends it to the
-Anthropic Claude API for threat assessment generation.
-
-The system prompt instructs the model to produce a six-section academic
-report covering:
-    1. Psychological profile
-    2. Professional attack surface
-    3. Social engineering vectors (3–5 specific scenarios)
-    4. Spear phishing email drafts (3 complete emails using Cialdini principles)
-    5. Pretexting phone / chat scripts
-    6. Risk assessment (LOW / MEDIUM / HIGH)
-
-All sections must be grounded strictly in the provided OSINT data — the model
-is explicitly instructed not to infer or invent facts beyond what was observed.
-
-Requires
---------
-Environment variable ``ANTHROPIC_API_KEY`` must be set before starting the
-backend.  Export it in the shell or add it to a ``.env`` file:
-
-    export ANTHROPIC_API_KEY=sk-ant-...
-"""
+# AI Threat Analyzer
+# Takes the OSINT data the analyst pinned and sends it to Claude.
+# Claude returns a structured threat report with phishing scenarios,
+# social engineering vectors, and a risk rating.
 
 from ai.client import get_client
 
-
-# ── System prompt ──────────────────────────────────────────────────────────
-# Sent to Claude as the system message.  Defines the role, output format,
-# and academic / ethical framing for all analysis requests.
+# System prompt that tells Claude what role to play and how to format the output.
+# Changing this will change the structure of the generated report.
 SYSTEM_PROMPT = """\
 You are a cybersecurity research assistant supporting an academic OSINT thesis at Aarhus University.
 Your task: analyse OSINT-gathered open-source data about a target and produce a structured threat assessment
@@ -69,64 +46,24 @@ Overall social engineering susceptibility: LOW / MEDIUM / HIGH
 
 
 class AttackVectorAnalyzer:
-    """Generates AI-powered attack vector assessments from curated OSINT data.
-
-    Wraps the Anthropic Messages API and handles prompt construction.
-    A new instance should be created per request to ensure the API key is
-    read at call time (useful if the key is set after process start).
-
-    Attributes:
-        client (anthropic.Anthropic): Authenticated Anthropic API client.
-    """
+    """Sends curated OSINT data to Claude and returns a threat assessment report."""
 
     def __init__(self):
         self.client = get_client()
 
-    def analyze(
-        self,
-        target_info:   dict,
-        curated_data:  list,
-        analysis_type: str = "full",
-    ) -> str:
-        """Send curated OSINT data to Claude and return the threat assessment.
-
-        Args:
-            target_info:   Dict with keys ``name``, ``username``, ``email``.
-            curated_data:  List of dicts, each with keys ``module``, ``label``,
-                           ``content``.  Represents the analyst-curated items
-                           selected from the gathering phase.
-            analysis_type: Scope hint passed to the prompt.  One of:
-                           ``"full"``, ``"phishing"``, ``"social_engineering"``.
-
-        Returns:
-            The raw markdown text returned by Claude (multiple ``## SECTION``
-            blocks as defined in the system prompt).
-        """
-        prompt  = self._build_prompt(target_info, curated_data, analysis_type)
+    def analyze(self, target_info: dict, curated_data: list, analysis_type: str = "full") -> str:
+        """Build the prompt and call the Claude API."""
+        prompt = self._build_prompt(target_info, curated_data, analysis_type)
         message = self.client.messages.create(
-            model="claude-opus-4-5",
+            model="claude-opus-4-7",
             max_tokens=4096,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
         )
         return message.content[0].text
 
-    def _build_prompt(
-        self,
-        target_info:   dict,
-        curated_data:  list,
-        analysis_type: str,
-    ) -> str:
-        """Construct the user-turn prompt from target info and curated items.
-
-        Args:
-            target_info:   Target identity dict.
-            curated_data:  Analyst-selected OSINT items.
-            analysis_type: Focus scope (passed through to the prompt).
-
-        Returns:
-            Formatted markdown string ready to send as the user message.
-        """
+    def _build_prompt(self, target_info: dict, curated_data: list, analysis_type: str) -> str:
+        """Format the target info and pinned OSINT cards into a single prompt."""
         lines = ["# TARGET INTELLIGENCE BRIEF", ""]
         lines.append(f"**Full Name:** {target_info.get('name', 'Unknown')}")
         if target_info.get("username"):

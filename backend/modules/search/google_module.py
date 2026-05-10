@@ -1,3 +1,8 @@
+# Google Search Module
+# Opens a real Chrome browser (not headless) and runs searches on Google.
+# Using a visible browser lets the user solve CAPTCHAs manually if Google blocks us.
+# All queries share one browser session to avoid repeated startups.
+
 import time
 import urllib.parse
 from modules.base import BaseModule
@@ -11,20 +16,25 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-# Queries to run per target field.  {name} / {username} / {email} filled at runtime.
+# CSS selectors for different parts of the Google results page
+RESULTS_SELECTOR = "div.g, div.tF2Cxc, div.v7W49e, div.MjjYud > div"
+WAIT_SELECTOR    = "div.g, #search, #rso"
+CAPTCHA_SELECTOR = "form#captcha-form, #recaptcha, div.g-recaptcha, input#captcha"
+
+# Search query templates — {name}, {username}, {email} are filled at runtime
 NAME_QUERIES = [
-    ("General",         '"{name}"'),
-    ("LinkedIn",        '"{name}" site:linkedin.com'),
-    ("Twitter / X",     '"{name}" site:twitter.com OR site:x.com'),
-    ("Facebook",        '"{name}" site:facebook.com'),
-    ("Instagram",       '"{name}" site:instagram.com'),
-    ("GitHub",          '"{name}" site:github.com'),
-    ("Reddit",          '"{name}" site:reddit.com'),
-    ("ResearchGate",    '"{name}" site:researchgate.net'),
-    ("Academia",        '"{name}" site:academia.edu'),
-    ("News",            '"{name}" news'),
-    ("Documents",       '"{name}" filetype:pdf OR filetype:doc'),
-    ("Contact Info",    '"{name}" email OR phone OR contact'),
+    ("General",      '"{name}"'),
+    ("LinkedIn",     '"{name}" site:linkedin.com'),
+    ("Twitter / X",  '"{name}" site:twitter.com OR site:x.com'),
+    ("Facebook",     '"{name}" site:facebook.com'),
+    ("Instagram",    '"{name}" site:instagram.com'),
+    ("GitHub",       '"{name}" site:github.com'),
+    ("Reddit",       '"{name}" site:reddit.com'),
+    ("ResearchGate", '"{name}" site:researchgate.net'),
+    ("Academia",     '"{name}" site:academia.edu'),
+    ("News",         '"{name}" news'),
+    ("Documents",    '"{name}" filetype:pdf OR filetype:doc'),
+    ("Contact Info", '"{name}" email OR phone OR contact'),
 ]
 USERNAME_QUERIES = [
     ("Username General", '"{username}"'),
@@ -34,12 +44,9 @@ EMAIL_QUERIES = [
     ("Email Search", '"{email}"'),
 ]
 
-RESULTS_SELECTOR = "div.g, div.tF2Cxc, div.v7W49e, div.MjjYud > div"
-WAIT_SELECTOR    = "div.g, #search, #rso"
-CAPTCHA_SELECTOR = "form#captcha-form, #recaptcha, div.g-recaptcha, input#captcha"
-
 
 def _build_driver() -> webdriver.Chrome:
+    """Launch Chrome with anti-detection flags so Google is less likely to block us."""
     opts = Options()
     opts.add_argument("--start-maximized")
     opts.add_argument("--no-sandbox")
@@ -53,7 +60,7 @@ def _build_driver() -> webdriver.Chrome:
     opts.add_experimental_option("useAutomationExtension", False)
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=opts)
-    # Hide webdriver flag via JS
+    # Remove the navigator.webdriver flag that sites use to detect Selenium
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",
         {"source": "Object.defineProperty(navigator,'webdriver',{get:()=>undefined})"},
@@ -62,19 +69,19 @@ def _build_driver() -> webdriver.Chrome:
 
 
 def _extract(el) -> dict | None:
-    """Extract title, url, snippet from a result element."""
+    """Pull title, URL, and snippet text out of a single search result element."""
     try:
         h3s = el.find_elements(By.TAG_NAME, "h3")
         title = h3s[0].text if h3s else ""
 
-        links = el.find_elements(By.TAG_NAME, "a")
         url = ""
-        for a in links:
+        for a in el.find_elements(By.TAG_NAME, "a"):
             href = a.get_attribute("href") or ""
             if href.startswith("http") and "google.com" not in href:
                 url = href
                 break
 
+        # Try several snippet CSS classes — Google changes these frequently
         snippet = ""
         for sel in [".VwiC3b", ".st", ".aCOpRe", ".IsZvec", "div[data-sncf]"]:
             els = el.find_elements(By.CSS_SELECTOR, sel)
@@ -92,24 +99,22 @@ def _extract(el) -> dict | None:
     return None
 
 
-def _search_one(driver, query: str, label: str, captcha_wait: int = 90) -> list[dict]:
-    """Navigate to one Google search page and return extracted results."""
+def _search_one(driver, query: str, label: str, captcha_wait: int = 90) -> list:
+    """Navigate to one Google search page and return all extracted results."""
     encoded = urllib.parse.quote_plus(query)
     driver.get(f"https://www.google.com/search?q={encoded}&hl=en&num=20")
     time.sleep(1.5)
 
-    # If CAPTCHA detected, wait for user to solve it manually
+    # If Google shows a CAPTCHA, wait for the user to solve it in the open browser window
     if driver.find_elements(By.CSS_SELECTOR, CAPTCHA_SELECTOR):
-        print(f"[Google] CAPTCHA detected on '{label}' — solve in browser ({captcha_wait}s timeout)")
+        print(f"[Google] CAPTCHA on '{label}' — solve in browser ({captcha_wait}s)")
         try:
             WebDriverWait(driver, captcha_wait).until_not(
                 EC.presence_of_element_located((By.CSS_SELECTOR, CAPTCHA_SELECTOR))
             )
         except Exception:
-            print(f"[Google] CAPTCHA timeout on '{label}', skipping")
             return [{"category": label, "error": "CAPTCHA timeout"}]
 
-    # Wait for results
     try:
         WebDriverWait(driver, 15).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, WAIT_SELECTOR))
@@ -117,7 +122,7 @@ def _search_one(driver, query: str, label: str, captcha_wait: int = 90) -> list[
     except Exception:
         return []
 
-    # Scroll to trigger lazy-loading
+    # Scroll down to trigger lazy-loaded results
     for _ in range(2):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(1)
@@ -129,17 +134,14 @@ def _search_one(driver, query: str, label: str, captcha_wait: int = 90) -> list[
             data["category"] = label
             results.append(data)
 
-    time.sleep(1)  # polite delay between queries
+    time.sleep(1)  # small delay between queries to avoid rate-limiting
     return results
 
 
 class GoogleModule(BaseModule):
     """
-    Google OSINT search module.
-
-    Runs a visible (non-headless) Chrome session so the user can manually
-    solve CAPTCHAs if Google blocks automated requests.  All queries share
-    one browser session for efficiency.
+    Google OSINT module using a visible Chrome browser.
+    Runs one browser session for all queries — user can solve CAPTCHAs if they appear.
     """
 
     name = "google"
@@ -149,7 +151,7 @@ class GoogleModule(BaseModule):
         username = target.get("username", "")
         email    = target.get("email", "")
 
-        queries: list[tuple[str, str]] = []
+        queries = []
         if name:
             for label, tmpl in NAME_QUERIES:
                 queries.append((label, tmpl.format(name=name)))
@@ -164,7 +166,7 @@ class GoogleModule(BaseModule):
             return {"total": 0, "results": []}
 
         driver = _build_driver()
-        all_results: list[dict] = []
+        all_results = []
         try:
             for label, q in queries:
                 hits = _search_one(driver, q, label)

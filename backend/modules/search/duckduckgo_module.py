@@ -1,52 +1,19 @@
-"""
-DuckDuckGo search OSINT module.
-
-Uses the ``ddgs`` library (the official DuckDuckGo Search API wrapper,
-formerly known as ``duckduckgo_search``) to run targeted dork-style queries
-without authentication, API keys, or CAPTCHA challenges.
-
-Collects
---------
-Up to 8 results per query across 15+ query templates for ``name``:
-    - General name search
-    - Platform-specific dorks: LinkedIn, Twitter / X, Facebook, Instagram,
-      GitHub, Reddit, YouTube, TikTok, ResearchGate, Academia.edu
-    - Document search: PDF, DOC, PPTX
-    - Contact information: email, phone, address
-    - News and press appearances
-    - Image / portrait search
-
-4 additional query templates for ``username``:
-    - General username search
-    - Social media (Twitter, Instagram, Reddit, TikTok)
-    - GitHub
-    - Streaming (Twitch, YouTube)
-
-1 additional query for ``email`` if provided.
-
-Required target field : ``name``
-Optional target fields: ``username``, ``email``
-"""
+# DuckDuckGo Search Module
+# Runs a set of targeted search queries (dorks) against DuckDuckGo.
+# No API key or login needed — uses the ddgs library.
+# Covers: social media, documents, contact info, news, images, and more.
 
 from modules.base import BaseModule
 from ddgs import DDGS
 
 
 class DuckDuckGoModule(BaseModule):
-    """OSINT module using DuckDuckGo Search.
-
-    Runs a battery of targeted search queries (dorks) against DuckDuckGo
-    and returns results categorised by query intent.
-
-    Attributes:
-        name           (str):  Module identifier — ``"duckduckgo"``.
-        NAME_QUERIES   (list): Query templates that use the ``{name}`` field.
-        USERNAME_QUERIES (list): Query templates that use ``{username}``.
-    """
+    """Runs dork-style searches on DuckDuckGo and returns categorised results."""
 
     name = "duckduckgo"
 
-    # (label, query_template) — placeholders filled at runtime
+    # Query templates for searching by name.
+    # {name} is replaced with the actual target name at runtime.
     NAME_QUERIES = [
         ("General",        '"{name}"'),
         ("LinkedIn",       '"{name}" site:linkedin.com'),
@@ -65,6 +32,7 @@ class DuckDuckGoModule(BaseModule):
         ("Images",         '"{name}" photo portrait'),
     ]
 
+    # Query templates for searching by username.
     USERNAME_QUERIES = [
         ("Username General",   '"{username}"'),
         ("Username Social",    '"{username}" site:twitter.com OR site:instagram.com OR site:reddit.com OR site:tiktok.com'),
@@ -73,23 +41,11 @@ class DuckDuckGoModule(BaseModule):
     ]
 
     def run(self, target: dict) -> dict:
-        """Execute DuckDuckGo dork searches for the target.
-
-        Args:
-            target: Dict with keys ``name``, ``username``, ``email``.
-
-        Returns:
-            Dict with keys:
-                - ``total``   (int)  — Total number of individual results
-                - ``results`` (list) — List of dicts, each with:
-                    ``category``, ``title``, ``url``, ``description``
-                    (or ``error`` if the query failed)
-        """
         name     = target.get("name", "")
         username = target.get("username", "")
         email    = target.get("email", "")
 
-        # Build ordered list of (label, query) pairs
+        # Build the list of queries to run based on what fields were provided
         queries = []
         if name:
             for label, tmpl in self.NAME_QUERIES:

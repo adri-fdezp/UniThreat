@@ -18,9 +18,8 @@ import { useState, useMemo } from "react";
 const MODULE_LABELS = {
   google:          "GOOGLE",
   duckduckgo:      "DDGO",
-  github:          "GITHUB",
-  reddit:          "REDDIT",
   instagram:       "INSTAGRAM",
+  linkedin:        "LINKEDIN",
   username_enum:   "USERNAME",
   email_osint:     "EMAIL",
   claude_research: "CLAUDE AI",

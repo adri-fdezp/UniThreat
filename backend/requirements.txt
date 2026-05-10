@@ -5,3 +5,4 @@ requests
 instaloader
 anthropic
 holehe
+python-dotenv

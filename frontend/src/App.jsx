@@ -28,12 +28,11 @@ import "./styles/App.css";
 const ALL_MODULES = [
   { id: "google",          label: "GOOGLE",          note: "Selenium — visible browser, manual CAPTCHA if needed" },
   { id: "duckduckgo",      label: "DUCKDUCKGO",      note: "Fast API-based web dorks (15+ query templates)" },
-  { id: "github",          label: "GITHUB",           note: "Profile, repos, commit emails, organisations" },
-  { id: "reddit",          label: "REDDIT",           note: "Posts, comments, subreddits, account profile" },
-  { id: "instagram",       label: "INSTAGRAM",        note: "Public profile and recent posts (requires username)" },
-  { id: "username_enum",   label: "USERNAME",         note: "500+ site enumeration via WhatsMyName dataset" },
-  { id: "email_osint",     label: "EMAIL OSINT",      note: "Gravatar lookup + Holehe site registrations" },
-  { id: "claude_research", label: "CLAUDE RESEARCH",  note: "AI-driven OSINT profile — identity, presence, search queries" },
+  { id: "instagram",       label: "INSTAGRAM",       note: "Public profile and recent posts (requires username)" },
+  { id: "linkedin",        label: "LINKEDIN",        note: "Full profile scrape — requires LinkedIn URL and credentials in .env" },
+  { id: "username_enum",   label: "USERNAME",        note: "500+ site enumeration via WhatsMyName dataset" },
+  { id: "email_osint",     label: "EMAIL OSINT",     note: "Gravatar lookup + Holehe site registrations" },
+  { id: "claude_research", label: "CLAUDE RESEARCH", note: "AI-driven OSINT profile — identity, presence, search queries" },
 ];
 
 // ── Data flattener ─────────────────────────────────────────────────────────
@@ -69,89 +68,6 @@ function flattenModuleData(moduleId, data) {
       (data.results || []).forEach((r) => {
         if (!r.error) push(r.category || "Search", r.title, r.url, r.description);
       });
-      break;
-    }
-
-    case "github": {
-      if (data.profile) {
-        const p = data.profile;
-        push(
-          "Profile",
-          `GitHub: ${p.login}${p.name ? ` (${p.name})` : ""}`,
-          p.url,
-          [
-            p.name             && `Name: ${p.name}`,
-            p.email            && `Email: ${p.email}`,
-            p.bio              && `Bio: ${p.bio}`,
-            p.company          && `Company: ${p.company}`,
-            p.location         && `Location: ${p.location}`,
-            p.blog             && `Blog: ${p.blog}`,
-            p.twitter_username && `Twitter: @${p.twitter_username}`,
-            `Followers: ${p.followers} · Following: ${p.following}`,
-            `Public repos: ${p.public_repos}`,
-            p.hireable         && `Hireable: yes`,
-            `Account created: ${p.created_at}`,
-          ].filter(Boolean).join("\n")
-        );
-      }
-      if (data.emails?.length)
-        push("Emails", `Commit emails: ${data.emails.join(", ")}`, "", data.emails.join(", "));
-      if (data.orgs?.length)
-        push(
-          "Organisations",
-          `Member of ${data.orgs.length} organisation${data.orgs.length > 1 ? "s" : ""}`,
-          "",
-          data.orgs.map((o) => `${o.name}: ${o.url}`).join("\n")
-        );
-      (data.repos || []).forEach((r) =>
-        push(
-          "Repository",
-          r.name,
-          r.url || (data.profile ? `https://github.com/${data.profile.login}/${r.name}` : ""),
-          [r.description, r.language && `Language: ${r.language}`, `★ ${r.stars}`,
-           r.topics?.length && `Topics: ${r.topics.join(", ")}`, r.fork && "(fork)"]
-            .filter(Boolean).join(" · ")
-        )
-      );
-      (data.name_search || []).forEach((u) =>
-        push("Name Search", `GitHub: ${u.login}`, u.url, `Username: ${u.login}`)
-      );
-      break;
-    }
-
-    case "reddit": {
-      if (data.profile) {
-        const p = data.profile;
-        push(
-          "Profile",
-          `Reddit: u/${p.name}`,
-          p.url,
-          [
-            `Post karma: ${p.karma_post}`,
-            `Comment karma: ${p.karma_comment}`,
-            `Total karma: ${p.total_karma}`,
-            p.has_verified_email && "Email verified: yes",
-            p.is_gold            && "Reddit Gold: yes",
-            p.is_employee        && "Reddit Employee: yes",
-          ].filter(Boolean).join("\n")
-        );
-      }
-      if (data.subreddits?.length)
-        push(
-          "Subreddits",
-          `Active in ${data.subreddits.length} communities`,
-          "",
-          data.subreddits.join(", ")
-        );
-      (data.posts    || []).forEach((p) =>
-        push(`r/${p.subreddit}`, p.title, p.url || "", p.selftext || "")
-      );
-      (data.comments || []).forEach((c) =>
-        push(`r/${c.subreddit}`, c.body?.slice(0, 80) || "Comment", c.url || "", c.body || "")
-      );
-      (data.name_search || []).forEach((u) =>
-        push("Name Search", `Reddit: u/${u.name}`, u.url, `u/${u.name} (karma: ${u.karma})`)
-      );
       break;
     }
 
@@ -214,6 +130,29 @@ function flattenModuleData(moduleId, data) {
       break;
     }
 
+    case "linkedin": {
+      // One profile card summarising the header fields
+      push(
+        "Profile",
+        `LinkedIn: ${data.name || data.url}`,
+        data.url || "",
+        [
+          data.headline    && `Headline: ${data.headline}`,
+          data.location    && `Location: ${data.location}`,
+          data.connections && `Connections: ${data.connections}`,
+          data.about       && `About: ${data.about}`,
+          data.skills?.length && `Skills: ${data.skills.join(", ")}`,
+        ].filter(Boolean).join("\n")
+      );
+      (data.experience || []).forEach((e) =>
+        push("Experience", `${e.title} @ ${e.company}`, "", `${e.title} at ${e.company}\n${e.dates}`)
+      );
+      (data.education || []).forEach((e) =>
+        push("Education", e.school, "", `${e.school}\n${e.degree}\n${e.dates}`)
+      );
+      break;
+    }
+
     case "claude_research": {
       (data.findings || []).forEach((f) =>
         push(f.category, f.title, "", f.content || "")
@@ -232,7 +171,7 @@ function flattenModuleData(moduleId, data) {
 export default function App() {
   // ── State ──────────────────────────────────────────────────────────────
   const [target,          setTarget]          = useState({ name: "", username: "", email: "" });
-  const [selectedModules, setSelectedModules] = useState(["google", "github", "reddit"]);
+  const [selectedModules, setSelectedModules] = useState(["duckduckgo", "claude_research"]);
   const [isGathering,     setIsGathering]     = useState(false);
   const [moduleStatuses,  setModuleStatuses]  = useState({});
   const [flatResults,     setFlatResults]     = useState([]);   // all individual result cards
