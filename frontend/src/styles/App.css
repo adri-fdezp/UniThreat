@@ -119,7 +119,7 @@ html, body {
 }
 
 .sidebar       { width: 220px; border-right: 1px solid var(--border); }
-.notes-sidebar { width: 320px; border-left:  1px solid var(--border); }
+.notes-sidebar { width: 420px; border-left:  1px solid var(--border); }
 
 /* ── Centre content area ──────────────────────────────────────────────────── */
 .main-content {
@@ -324,7 +324,8 @@ html, body {
 .result-module-badge.reddit      { background: rgba(255,  69,   0, 0.15); color: #ff6314; }
 .result-module-badge.instagram   { background: rgba(188,  62, 167, 0.15); color: #e040fb; }
 .result-module-badge.username_enum { background: rgba(188, 140, 255, 0.15); color: var(--purple); }
-.result-module-badge.email_osint { background: rgba(248,  81,  73, 0.15); color: var(--red); }
+.result-module-badge.email_osint    { background: rgba(248,  81,  73, 0.15); color: var(--red); }
+.result-module-badge.gemini_research { background: rgba( 66, 133, 244, 0.15); color: #4285f4; }
 
 .result-category { font-size: 9px; color: var(--text-dim); font-weight: 600; }
 
@@ -354,10 +355,18 @@ html, body {
   font-size: 11px;
   color: var(--text-dim);
   line-height: 1.5;
+  white-space: pre-wrap;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.result-card.linkedin .result-card-desc,
+.result-card.claude_research .result-card-desc,
+.result-card.gemini_research .result-card-desc {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
 }
 
 /* Pin button — sends the card to the Intel Workspace */

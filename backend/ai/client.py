@@ -3,7 +3,6 @@
 
 import os
 import anthropic
-import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -27,6 +26,7 @@ def get_anthropic_client() -> anthropic.Anthropic:
 
 def get_gemini_client():
     """Configure and return the Gemini API (google-generativeai)."""
+    import google.generativeai as genai
     api_key = os.environ.get("GOOGLE_API_KEY", "")
     if not api_key:
         raise ValueError(
@@ -35,3 +35,8 @@ def get_gemini_client():
         )
     genai.configure(api_key=api_key)
     return genai
+
+
+def get_client():
+    """Alias for get_anthropic_client used by some modules."""
+    return get_anthropic_client()

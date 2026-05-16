@@ -23,6 +23,7 @@ const MODULE_LABELS = {
   username_enum:   "USERNAME",
   email_osint:     "EMAIL",
   claude_research: "CLAUDE AI",
+  gemini_research: "GEMINI AI",
 };
 
 // ── ResultCard ─────────────────────────────────────────────────────────────
@@ -32,7 +33,7 @@ const MODULE_LABELS = {
  */
 function ResultCard({ item, isPinned, onPinToggle }) {
   return (
-    <div className={`result-card ${isPinned ? "pinned" : ""}`}>
+    <div className={`result-card ${item.module} ${isPinned ? "pinned" : ""}`}>
       <div className="result-card-main">
 
         {/* Source badge + category label */}

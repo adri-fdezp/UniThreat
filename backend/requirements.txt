@@ -7,3 +7,5 @@ anthropic
 holehe
 python-dotenv
 google-generativeai
+selenium
+webdriver-manager

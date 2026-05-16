@@ -33,6 +33,7 @@ const ALL_MODULES = [
   { id: "username_enum",   label: "USERNAME",        note: "500+ site enumeration via WhatsMyName dataset" },
   { id: "email_osint",     label: "EMAIL OSINT",     note: "Gravatar lookup + Holehe site registrations" },
   { id: "claude_research", label: "CLAUDE RESEARCH", note: "AI-driven OSINT profile — identity, presence, search queries" },
+  { id: "gemini_research", label: "GEMINI RESEARCH", note: "AI-driven OSINT profile via Google Gemini — identity, presence, search queries" },
 ];
 
 // ── Data flattener ─────────────────────────────────────────────────────────
@@ -131,29 +132,58 @@ function flattenModuleData(moduleId, data) {
     }
 
     case "linkedin": {
-      // One profile card summarising the header fields
+      const sections = [];
+
+      if (data.headline)    sections.push(`HEADLINE\n${data.headline}`);
+      if (data.location)    sections.push(`LOCATION\n${data.location}`);
+      if (data.connections) sections.push(`CONNECTIONS\n${data.connections}`);
+      if (data.about)       sections.push(`ABOUT\n${data.about}`);
+
+      if (data.experience?.length) {
+        sections.push(
+          `EXPERIENCE\n${data.experience.map((e) =>
+            `• ${[e.title, e.company, e.dates].filter(Boolean).join("  |  ")}`
+          ).join("\n")}`
+        );
+      }
+
+      if (data.education?.length) {
+        sections.push(
+          `EDUCATION\n${data.education.map((e) =>
+            `• ${[e.school, e.degree, e.dates].filter(Boolean).join("  |  ")}`
+          ).join("\n")}`
+        );
+      }
+
+      if (data.skills?.length) {
+        sections.push(`SKILLS\n${data.skills.join("  ·  ")}`);
+      }
+
       push(
         "Profile",
         `LinkedIn: ${data.name || data.url}`,
         data.url || "",
-        [
-          data.headline    && `Headline: ${data.headline}`,
-          data.location    && `Location: ${data.location}`,
-          data.connections && `Connections: ${data.connections}`,
-          data.about       && `About: ${data.about}`,
-          data.skills?.length && `Skills: ${data.skills.join(", ")}`,
-        ].filter(Boolean).join("\n")
+        sections.join("\n\n")
       );
-      (data.experience || []).forEach((e) =>
-        push("Experience", `${e.title} @ ${e.company}`, "", `${e.title} at ${e.company}\n${e.dates}`)
-      );
-      (data.education || []).forEach((e) =>
-        push("Education", e.school, "", `${e.school}\n${e.degree}\n${e.dates}`)
-      );
+
+      if (data.posts?.length) {
+        push(
+          "Recent Posts",
+          `Recent Posts (${data.posts.length})`,
+          "",
+          data.posts.map((p, i) =>
+            [
+              `Post ${i + 1}${p.date ? ` · ${p.date}` : ""}${p.likes ? ` · ${p.likes} reactions` : ""}`,
+              p.text,
+            ].join("\n")
+          ).join("\n\n─────────────────────────\n\n")
+        );
+      }
       break;
     }
 
-    case "claude_research": {
+    case "claude_research":
+    case "gemini_research": {
       (data.findings || []).forEach((f) =>
         push(f.category, f.title, "", f.content || "")
       );
@@ -171,7 +201,7 @@ function flattenModuleData(moduleId, data) {
 export default function App() {
   // ── State ──────────────────────────────────────────────────────────────
   const [target,          setTarget]          = useState({ name: "", username: "", email: "" });
-  const [selectedModules, setSelectedModules] = useState(["duckduckgo", "claude_research"]);
+  const [selectedModules, setSelectedModules] = useState([]);
   const [isGathering,     setIsGathering]     = useState(false);
   const [moduleStatuses,  setModuleStatuses]  = useState({});
   const [flatResults,     setFlatResults]     = useState([]);   // all individual result cards

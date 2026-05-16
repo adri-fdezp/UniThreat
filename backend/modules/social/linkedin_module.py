@@ -65,6 +65,80 @@ def _text(driver, selector: str, default: str = "") -> str:
         return default
 
 
+def _scrape_posts(driver, profile_url: str) -> list:
+    """Navigate to the recent-activity page and return the last 3 original posts."""
+    base_url = profile_url.rstrip("/").split("?")[0]
+    driver.get(f"{base_url}/recent-activity/all/")
+    time.sleep(3)
+
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
+    time.sleep(2)
+
+    posts = []
+    try:
+        containers = driver.find_elements(By.CSS_SELECTOR, "div.feed-shared-update-v2")
+
+        for container in containers[:10]:
+            if len(posts) >= 3:
+                break
+
+            # Post text — try several selectors LinkedIn has used over time
+            text = ""
+            for sel in [
+                ".feed-shared-text span[dir='ltr']",
+                ".feed-shared-update-v2__description span[dir]",
+                ".update-components-text span[dir]",
+                ".break-words span[dir]",
+            ]:
+                try:
+                    els = container.find_elements(By.CSS_SELECTOR, sel)
+                    if els:
+                        text = els[0].text.strip()
+                        if text:
+                            break
+                except Exception:
+                    continue
+
+            if not text:
+                continue
+
+            # Post date
+            date = ""
+            for sel in [
+                ".feed-shared-actor__sub-description span[aria-hidden='true']",
+                ".update-components-actor__sub-description span[aria-hidden='true']",
+            ]:
+                try:
+                    els = container.find_elements(By.CSS_SELECTOR, sel)
+                    if els:
+                        date = els[0].text.strip()
+                        if date:
+                            break
+                except Exception:
+                    continue
+
+            # Reaction count
+            likes = ""
+            for sel in [
+                ".social-details-social-counts__reactions-count",
+                "button.react-button span",
+            ]:
+                try:
+                    els = container.find_elements(By.CSS_SELECTOR, sel)
+                    if els:
+                        likes = els[0].text.strip()
+                        if likes:
+                            break
+                except Exception:
+                    continue
+
+            posts.append({"text": text, "date": date, "likes": likes})
+    except Exception:
+        pass
+
+    return posts
+
+
 def _scrape_profile(driver, url: str) -> dict:
     """Navigate to the LinkedIn profile URL and extract all visible sections."""
     driver.get(url)
@@ -167,6 +241,9 @@ def _scrape_profile(driver, url: str) -> dict:
     except Exception:
         pass
 
+    # ── Recent posts ───────────────────────────────────────────────────────
+    posts = _scrape_posts(driver, url)
+
     return {
         "url":         url,
         "name":        name,
@@ -177,6 +254,7 @@ def _scrape_profile(driver, url: str) -> dict:
         "experience":  experience,
         "education":   education,
         "skills":      skills,
+        "posts":       posts,
     }
 
 

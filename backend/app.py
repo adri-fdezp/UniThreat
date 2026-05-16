@@ -30,6 +30,7 @@ _MODULE_REGISTRY = {
     "username_enum":   ("modules.username.enumerator_module","UsernameEnumerator"),
     "email_osint":     ("modules.email_osint.hibp_module",   "EmailOsintModule"),
     "claude_research": ("modules.ai.claude_research_module", "ClaudeResearchModule"),
+    "gemini_research": ("modules.ai.gemini_research_module", "GeminiResearchModule"),
 }
 
 

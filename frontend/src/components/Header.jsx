@@ -15,11 +15,7 @@ export default function Header({ statusLabel, isLive }) {
         UNITHREAT <span>| INTELLIGENCE ENGINE</span>
       </div>
 
-      <div className={`header-status ${isLive ? "live" : ""}`}>
-        {statusLabel}
-      </div>
-
-      <div className="header-version">v2.0 · Aarhus University</div>
+<div className="header-version">v2.0 · Aarhus University</div>
     </header>
   );
 }

@@ -71,7 +71,7 @@ class AttackVectorAnalyzer:
         """Call the Google Gemini API."""
         genai = get_gemini_client()
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-pro",
+            model_name="gemini-2.0-flash",
             system_instruction=SYSTEM_PROMPT
         )
         response = model.generate_content(prompt)
