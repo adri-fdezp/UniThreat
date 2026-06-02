@@ -7,11 +7,11 @@
 ![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat-square&logo=flask)
 ![License](https://img.shields.io/badge/License-Educational-orange?style=flat-square)
 
----
+
 
 ## Overview
 
-UniThreat is a modular OSINT platform built for security researchers and red teamers. It runs multiple intelligence-gathering modules in parallel, streams results to the UI in real time via Server-Sent Events, and feeds curated findings into an AI-powered attack-vector analyzer.
+UniThreat is a modular OSINT platform built for security researchers. It runs multiple intelligence-gathering modules in parallel, streams results to the UI in real time via Server-Sent Events, and feeds curated findings into an AI-powered attack-vector analyzer.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -34,7 +34,6 @@ UniThreat is a modular OSINT platform built for security researchers and red tea
 └─────────────────────────────────────────────────────┘
 ```
 
----
 
 ## Features
 
@@ -51,7 +50,7 @@ UniThreat is a modular OSINT platform built for security researchers and red tea
 | **Attack Vector Analyzer** | AI-generated threat assessment from curated findings |
 | **SpamAssassin Scorer** | Email header/body phishing analysis |
 
----
+
 
 ## Prerequisites
 
@@ -61,7 +60,7 @@ UniThreat is a modular OSINT platform built for security researchers and red tea
 | Node.js | 18+ |
 | Google Chrome | Latest stable (for Selenium modules) |
 
----
+
 
 ## Installation
 
@@ -117,7 +116,7 @@ cd frontend
 npm install
 ```
 
----
+
 
 ## Running the App
 
@@ -144,7 +143,7 @@ npm run dev
 
 Then open [http://localhost:5173](http://localhost:5173) in your browser.
 
----
+
 
 ## Usage
 
@@ -154,35 +153,6 @@ Then open [http://localhost:5173](http://localhost:5173) in your browser.
 4. Curate interesting findings and click **Analyze** to generate an AI threat assessment.
 5. Use the **Email Scorer** tab to test phishing email payloads against SpamAssassin.
 
----
-
-## Project Structure
-
-```
-UniThreat/
-├── backend/
-│   ├── app.py                  # Flask entry point & API routes
-│   ├── requirements.txt
-│   ├── modules/
-│   │   ├── search/             # Google, DuckDuckGo
-│   │   ├── social/             # Instagram, LinkedIn
-│   │   ├── username/           # Holehe-based enumerator
-│   │   ├── email_osint/        # HIBP breach lookup
-│   │   └── ai/                 # Claude & Gemini research modules
-│   └── ai/
-│       ├── analyzer.py         # Attack vector analysis
-│       ├── spamassassin.py     # Email scoring
-│       └── client.py           # Shared AI client
-└── frontend/
-    ├── src/
-    │   ├── App.jsx
-    │   ├── api/profiler.js
-    │   ├── components/
-    │   └── styles/
-    └── package.json
-```
-
----
 
 ## API Reference
 
@@ -195,12 +165,10 @@ UniThreat/
 | `POST` | `/api/score-email` | Score an email through SpamAssassin |
 | `GET` | `/health` | Health check |
 
----
 
 ## Disclaimer
 
 > This tool is intended **exclusively** for educational purposes and authorized security assessments. Always obtain explicit written permission before profiling any individual or organization. Misuse of this tool may violate local, national, or international law. The authors accept no liability for unauthorized or malicious use.
 
----
 
-*Master's Thesis project — Aarhus University, 2025*
+*Master's Thesis project — Aarhus University, 2026*
