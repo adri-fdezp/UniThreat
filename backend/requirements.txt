@@ -2,10 +2,9 @@ flask
 flask-cors
 ddgs
 requests
-instaloader
+instaloader[browser-cookie3]
 anthropic
 holehe
 python-dotenv
-google-generativeai
 selenium
 webdriver-manager

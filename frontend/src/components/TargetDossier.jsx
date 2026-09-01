@@ -54,8 +54,6 @@ export default function TargetDossier({
   onNotesChange,
   analysisType,
   onAnalysisTypeChange,
-  aiProvider,
-  onAiProviderChange,
   onGenerate,
   isAnalyzing,
   analysis,
@@ -190,15 +188,6 @@ export default function TargetDossier({
               <option value="full">Full Assessment</option>
               <option value="phishing">Phishing Focus</option>
               <option value="social_engineering">SocEng Focus</option>
-            </select>
-            <select
-              className="analysis-type-select"
-              value={aiProvider}
-              onChange={(e) => onAiProviderChange(e.target.value)}
-              style={{ width: 90, marginBottom: 0 }}
-            >
-              <option value="claude">CLAUDE</option>
-              <option value="gemini">GEMINI</option>
             </select>
           </div>
           <button

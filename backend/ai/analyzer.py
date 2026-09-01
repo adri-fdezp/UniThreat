@@ -4,7 +4,7 @@
 # social engineering vectors, and a risk rating.
 
 import re
-from ai.client import get_anthropic_client, get_gemini_client
+from ai.client import get_anthropic_client
 from ai.spamassassin import score_email
 
 # System prompt that tells the AI what role to play and how to format the output.
@@ -47,16 +47,12 @@ Overall social engineering susceptibility: LOW / MEDIUM / HIGH
 
 
 class AttackVectorAnalyzer:
-    """Sends curated OSINT data to Claude or Gemini and returns a threat assessment report."""
+    """Sends curated OSINT data to Claude and returns a threat assessment report."""
 
-    def analyze(self, target_info: dict, curated_data: list, analysis_type: str = "full", provider: str = "claude") -> str:
-        """Build the prompt and call the selected AI API."""
+    def analyze(self, target_info: dict, curated_data: list, analysis_type: str = "full") -> str:
+        """Build the prompt and call the Claude API."""
         prompt = self._build_prompt(target_info, curated_data, analysis_type)
-
-        if provider == "gemini":
-            analysis = self._analyze_gemini(prompt)
-        else:
-            analysis = self._analyze_claude(prompt)
+        analysis = self._analyze_claude(prompt)
 
         if analysis_type == "phishing":
             analysis += self._spam_scores_section(analysis)
@@ -67,22 +63,15 @@ class AttackVectorAnalyzer:
         """Call the Anthropic Claude API."""
         client = get_anthropic_client()
         message = client.messages.create(
-            model="claude-opus-4-7",
-            max_tokens=4096,
+            model="claude-opus-5",
+            max_tokens=16000,
+            # Opus 5 thinks by default; disabled here to keep the full 16k
+            # budget available for the (long, format-heavy) report itself.
+            thinking={"type": "disabled"},
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
         )
         return message.content[0].text
-
-    def _analyze_gemini(self, prompt: str) -> str:
-        """Call the Google Gemini API."""
-        genai = get_gemini_client()
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            system_instruction=SYSTEM_PROMPT
-        )
-        response = model.generate_content(prompt)
-        return response.text
 
     def _spam_scores_section(self, analysis_text: str) -> str:
         """Extract phishing emails from the analysis and score each via SpamAssassin."""

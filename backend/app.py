@@ -30,7 +30,6 @@ _MODULE_REGISTRY = {
     "username_enum":   ("modules.username.enumerator_module","UsernameEnumerator"),
     "email_osint":     ("modules.email_osint.hibp_module",   "EmailOsintModule"),
     "claude_research": ("modules.ai.claude_research_module", "ClaudeResearchModule"),
-    "gemini_research": ("modules.ai.gemini_research_module", "GeminiResearchModule"),
 }
 
 
@@ -171,7 +170,6 @@ def analyze():
             target_info=data.get("target_info", {}),
             curated_data=data.get("curated_data", []),
             analysis_type=data.get("analysis_type", "full"),
-            provider=data.get("provider", "claude"),
         )
         return jsonify({"analysis": result})
     except Exception as exc:

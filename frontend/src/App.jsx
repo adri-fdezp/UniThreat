@@ -33,7 +33,6 @@ const ALL_MODULES = [
   { id: "username_enum",   label: "USERNAME",        note: "500+ site enumeration via WhatsMyName dataset" },
   { id: "email_osint",     label: "EMAIL OSINT",     note: "Gravatar lookup + Holehe site registrations" },
   { id: "claude_research", label: "CLAUDE RESEARCH", note: "AI-driven OSINT profile — identity, presence, search queries" },
-  { id: "gemini_research", label: "GEMINI RESEARCH", note: "AI-driven OSINT profile via Google Gemini — identity, presence, search queries" },
 ];
 
 // ── Data flattener ─────────────────────────────────────────────────────────
@@ -228,8 +227,7 @@ function flattenModuleData(moduleId, data) {
       break;
     }
 
-    case "claude_research":
-    case "gemini_research": {
+    case "claude_research": {
       (data.findings || []).forEach((f) =>
         push(f.category, f.title, "", f.content || "")
       );
@@ -254,7 +252,6 @@ export default function App() {
   const [pinnedItems,     setPinnedItems]     = useState([]);   // items sent to workspace
   const [notes,           setNotes]           = useState("");   // analyst free-text notes
   const [analysisType,    setAnalysisType]    = useState("full");
-  const [aiProvider,      setAiProvider]      = useState("claude");
   const [isAnalyzing,     setIsAnalyzing]     = useState(false);
   const [analysis,        setAnalysis]        = useState(null);
   const [error,           setError]           = useState(null);
@@ -340,7 +337,7 @@ export default function App() {
           label: "Analyst Notes", content: notes.trim(),
         });
       }
-      const data = await analyzeData(target, curatedData, analysisType, aiProvider);
+      const data = await analyzeData(target, curatedData, analysisType);
       setAnalysis(data.analysis);
     } catch (err) {
       setError(err.message || "Analysis failed — check the API keys are set.");
@@ -506,8 +503,6 @@ export default function App() {
           onNotesChange={setNotes}
           analysisType={analysisType}
           onAnalysisTypeChange={setAnalysisType}
-          aiProvider={aiProvider}
-          onAiProviderChange={setAiProvider}
           onGenerate={handleAnalyze}
           isAnalyzing={isAnalyzing}
           analysis={analysis}

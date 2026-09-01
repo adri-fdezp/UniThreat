@@ -4,51 +4,87 @@
 # about their likely digital footprint using open-source research techniques.
 
 import re
+from anthropic.types import WebSearchTool20260209Param
 from modules.base import BaseModule
 from ai.client import get_client
 
 # Change MODEL to use a different Claude version
-MODEL = "claude-haiku-4-5"
+MODEL = "claude-sonnet-5"
 
-# Max tokens in Claude's response — increase if the output gets cut off
-MAX_TOKENS = 4096
+# Max tokens in Claude's response — increase if the output gets cut off.
+# Raised from the original 4096 because web search results (and the
+# "SEARCHES PERFORMED" section reporting on them) consume extra tokens.
+MAX_TOKENS = 16000
+
+# Claude's built-in web_search tool. `web_search_20260209` adds dynamic
+# filtering (Claude writes/executes code to filter results before they hit
+# the context window) — available on Sonnet 5, but not on Haiku, which is
+# why the module previously had to use the older basic variant.
+WEB_SEARCH_TOOL: WebSearchTool20260209Param = {
+    "type": "web_search_20260209",
+    "name": "web_search",
+    "max_uses": 8,
+}
 
 # This is the instruction sent to Claude as a system message.
 # Edit the section headers and descriptions to change what Claude researches.
 RESEARCH_PROMPT = """\
-You are an OSINT research assistant for spear phishing awareness.
-Given a target individual's identifiers, produce a structured intelligence profile
-using only information from the internet and public sources. REAL INFORMATION.
+You are an OSINT research assistant for spear phishing awareness, operating in
+an authorized security assessment. You have a `web_search` tool — use it.
 
-Format your entire response using "## CATEGORY" headers.  Use these sections:
+Before writing any findings, run multiple targeted searches: the full name
+(with quotes and variations), the username across platforms, the email address
+and its local-part, and combinations of these with terms like "linkedin",
+"github", "instagram", "resume", "profile". Do not write a single section
+before you have searched for it.
+
+Every claim you make must be labeled with its provenance:
+- "Confirmed (source: <url>)" — you found this in an actual search result.
+  Never write a Confirmed claim without a real URL from a tool result backing it.
+- "Inferred" — you are pattern-matching from the name/username/email
+  structure itself, not from a search result. Say so explicitly.
+If a search turns up nothing relevant, say "No public results found" rather
+than filling the gap with a plausible-sounding guess. Do not invent URLs,
+usernames, or handles that did not appear in an actual search result.
+
+Format your entire response using "## CATEGORY" headers. Use these sections:
 
 ## IDENTITY & BACKGROUND
 Full name variations, possible nationality/region based on the name, estimated
-age range if inferrable, and any notable public persona.
+age range if inferrable, and any notable public persona. Mark each item
+Confirmed (with source) or Inferred.
 
 ## LIKELY ONLINE PRESENCE
-Platforms this person probably uses based on their username pattern and name.
-List as: Platform — likely URL or handle — confidence (High/Medium/Low).
+Platforms this person uses. List as: Platform — URL or handle — Confirmed/Inferred
+— confidence (High/Medium/Low). Confirmed entries must cite the search result
+they came from; do not list a profile as Confirmed unless you actually saw it
+in a search result.
 
 ## USERNAME ANALYSIS
-Break down the username structure.  Identify any patterns, numbers, or words
-that suggest profession, birth year, interests, or naming conventions.
-Note other platforms where this exact username may be registered.
+Break down the username structure: patterns, numbers, or words that suggest
+profession, birth year, interests, or naming conventions. This section is
+necessarily Inferred (pattern reasoning), unless a search directly confirms one
+of these guesses — say so if it does. Note other platforms where this exact
+username turned up in search.
 
 ## EMAIL INTELLIGENCE
 Infer details from the email address: provider choice, username style,
-whether it looks personal vs professional, and likely registration era.
+whether it looks personal vs professional, and likely registration era. Also
+Inferred unless a search result (e.g. a breach notice or public listing)
+confirms something.
 
-## RECOMMENDED SEARCH QUERIES
-10 targeted search queries an investigator should run, formatted as a numbered
-list.  Cover: full name variants, username across platforms, email dorks,
-image search, professional profiles, and forum/community presence.
+## SEARCHES PERFORMED
+List the actual search queries you ran via the web_search tool, one per line,
+and one sentence on what each returned (or "no relevant results"). Then add up
+to 5 additional queries an investigator could run next that you did not have
+budget to try, covering angles you haven't covered yet.
 
 ## EXPOSURE SUMMARY
-Show all the relevant information that we could use about the profile, including family and friends if possible.
-Provide 3-5 sentence summary of the target's estimated digital footprint, overall
-information exposure level (LOW / MEDIUM / HIGH), and the most promising
-avenues for further manual investigation.
+Summarize only what search actually surfaced — do not speculate about family
+or associates unless a search result explicitly named them with a source.
+Provide a 3-5 sentence summary of the target's estimated digital footprint,
+overall information exposure level (LOW / MEDIUM / HIGH), and the most
+promising avenues for further manual investigation.
 """
 
 
@@ -74,11 +110,13 @@ class ClaudeResearchModule(BaseModule):
                     "cache_control": {"type": "ephemeral"},
                 }
             ],
+            tools=[WEB_SEARCH_TOOL],
             messages=[{"role": "user", "content": user_message}],
         )
 
-        # Find the first text block — Claude can return multiple block types
-        raw_text = next(b.text for b in message.content if b.type == "text")
+        # With web_search enabled, Claude's reply is interleaved text/tool-use/
+        # tool-result blocks — concatenate every text block, not just the first.
+        raw_text = "\n".join(b.text for b in message.content if b.type == "text")
         findings = self._parse_sections(raw_text)
 
         # Use the Exposure Summary section as the top-level summary card

@@ -24,19 +24,6 @@ def get_anthropic_client() -> anthropic.Anthropic:
     return _anthropic_client
 
 
-def get_gemini_client():
-    """Configure and return the Gemini API (google-generativeai)."""
-    import google.generativeai as genai
-    api_key = os.environ.get("GOOGLE_API_KEY", "")
-    if not api_key:
-        raise ValueError(
-            "GOOGLE_API_KEY is not set. "
-            "Add it to backend/.env and restart."
-        )
-    genai.configure(api_key=api_key)
-    return genai
-
-
 def get_client():
     """Alias for get_anthropic_client used by some modules."""
     return get_anthropic_client()

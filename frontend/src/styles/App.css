@@ -325,7 +325,6 @@ html, body {
 .result-module-badge.instagram   { background: rgba(188,  62, 167, 0.15); color: #e040fb; }
 .result-module-badge.username_enum { background: rgba(188, 140, 255, 0.15); color: var(--purple); }
 .result-module-badge.email_osint    { background: rgba(248,  81,  73, 0.15); color: var(--red); }
-.result-module-badge.gemini_research { background: rgba( 66, 133, 244, 0.15); color: #4285f4; }
 
 .result-category { font-size: 9px; color: var(--text-dim); font-weight: 600; }
 
@@ -362,8 +361,7 @@ html, body {
   overflow: hidden;
 }
 .result-card.linkedin .result-card-desc,
-.result-card.claude_research .result-card-desc,
-.result-card.gemini_research .result-card-desc {
+.result-card.claude_research .result-card-desc {
   display: block;
   -webkit-line-clamp: unset;
   overflow: visible;

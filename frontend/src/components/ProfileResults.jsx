@@ -23,7 +23,6 @@ const MODULE_LABELS = {
   username_enum:   "USERNAME",
   email_osint:     "EMAIL",
   claude_research: "CLAUDE AI",
-  gemini_research: "GEMINI AI",
 };
 
 // ── ResultCard ─────────────────────────────────────────────────────────────

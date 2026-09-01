@@ -25,10 +25,10 @@ UniThreat is a modular OSINT platform built for security researchers. It runs mu
 │  ┌──────────┐ ┌──────────┐ ┌────────────────────┐  │
 │  │  Search  │ │  Social  │ │     AI / Analysis  │  │
 │  │ Google   │ │Instagram │ │  Claude Research   │  │
-│  │DuckDuckGo│ │ LinkedIn │ │  Gemini Research   │  │
-│  └──────────┘ └──────────┘ │  Attack Analyzer   │  │
-│  ┌──────────┐ ┌──────────┐ │  SpamAssassin      │  │
-│  │Username  │ │  Email   │ └────────────────────┘  │
+│  │DuckDuckGo│ │ LinkedIn │ │  Attack Analyzer   │  │
+│  └──────────┘ └──────────┘ │  SpamAssassin      │  │
+│  ┌──────────┐ ┌──────────┐ └────────────────────┘  │
+│  │Username  │ │  Email   │                          │
 │  │Enumerator│ │   HIBP   │                          │
 │  └──────────┘ └──────────┘                          │
 └─────────────────────────────────────────────────────┘
@@ -46,7 +46,6 @@ UniThreat is a modular OSINT platform built for security researchers. It runs mu
 | **Username Enumerator** | Cross-platform username presence check (Holehe) |
 | **Email OSINT / HIBP** | Have I Been Pwned breach lookup |
 | **Claude Research** | Anthropic-powered deep OSINT synthesis |
-| **Gemini Research** | Google Gemini-powered intelligence gathering |
 | **Attack Vector Analyzer** | AI-generated threat assessment from curated findings |
 | **SpamAssassin Scorer** | Email header/body phishing analysis |
 
@@ -100,11 +99,8 @@ cp backend/.env.example backend/.env
 ```ini
 # backend/.env
 
-# Required for Claude Research and Attack Analyzer (claude provider)
+# Required for Claude Research and Attack Analyzer
 ANTHROPIC_API_KEY=your_anthropic_key_here
-
-# Optional — enables Gemini Research and Attack Analyzer (gemini provider)
-GOOGLE_API_KEY=your_google_key_here
 ```
 
 > **Never commit your `.env` file.** It is already listed in `.gitignore`.
@@ -152,7 +148,6 @@ Then open [http://localhost:5173](http://localhost:5173) in your browser.
 3. Click **Execute** — results stream in as each module completes.
 4. Curate interesting findings and click **Analyze** to generate an AI threat assessment.
 5. Use the **Email Scorer** tab to test phishing email payloads against SpamAssassin.
-
 
 ## API Reference
 
