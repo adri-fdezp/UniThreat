@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { EntityIcon } from "./Icons";
 
 export default function SearchForm({ onSearch, isLoading, onReset }) {
   const [name,         setName]        = useState("");
@@ -19,45 +20,39 @@ export default function SearchForm({ onSearch, isLoading, onReset }) {
 
   const locked = isLoading || !!onReset;
 
+  // Each target field is labelled with the entity it becomes on the graph
+  const fields = [
+    { icon: "person",  label: "Person",       type: "text",  value: name,        set: setName,        placeholder: "Full name", required: true },
+    { icon: "alias",   label: "Alias",        type: "text",  value: username,    set: setUsername,    placeholder: "Username or handle" },
+    { icon: "email",   label: "Email",        type: "email", value: email,       set: setEmail,       placeholder: "name@example.com" },
+    { icon: "website", label: "LinkedIn URL", type: "url",   value: linkedinUrl, set: setLinkedinUrl, placeholder: "https://linkedin.com/in/…" },
+  ];
+
   return (
-    <form onSubmit={handleSubmit} className="search-form">
-      <input
-        type="text"
-        className="input-field"
-        placeholder="Full name *"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        disabled={locked}
-        required
-      />
-      <input
-        type="text"
-        className="input-field"
-        placeholder="@username / handle (optional)"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        disabled={locked}
-      />
-      <input
-        type="email"
-        className="input-field"
-        placeholder="email@example.com (optional)"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        disabled={locked}
-      />
-      <input
-        type="url"
-        className="input-field"
-        placeholder="linkedin.com/in/profile (optional)"
-        value={linkedinUrl}
-        onChange={(e) => setLinkedinUrl(e.target.value)}
-        disabled={locked}
-      />
+    <form id="target-form" onSubmit={handleSubmit} className="search-form">
+      {fields.map((f) => (
+        <label key={f.label} className="palette-entity">
+          <EntityIcon name={f.icon} size={26} />
+          <span className="palette-entity-text">
+            <span className="palette-entity-name">
+              {f.label}{f.required && <span className="required-mark" aria-hidden="true"> *</span>}
+            </span>
+            <input
+              type={f.type}
+              className="input-field"
+              placeholder={f.placeholder}
+              value={f.value}
+              onChange={(e) => f.set(e.target.value)}
+              disabled={locked}
+              required={f.required}
+            />
+          </span>
+        </label>
+      ))}
 
       {onReset ? (
         <button type="button" className="reset-btn" onClick={onReset}>
-          ← NEW SEARCH
+          New graph
         </button>
       ) : (
         <button
@@ -65,7 +60,7 @@ export default function SearchForm({ onSearch, isLoading, onReset }) {
           className="execute-btn"
           disabled={isLoading || !name.trim()}
         >
-          {isLoading ? "GATHERING…" : "EXECUTE"}
+          {isLoading ? "Running…" : "Run analysis"}
         </button>
       )}
     </form>
