@@ -590,13 +590,6 @@ export default function App() {
 
         {/* ── GRAPH ────────────────────────────────────────────────────── */}
         <main className="main-content">
-          <div className="graph-tabs">
-            <div className="graph-tab">
-              <UiIcon name="graphView" size={14} />
-              <span>{target.name || "New graph"}</span>
-            </div>
-          </div>
-
           <div className="graph-toolbar">
             <div className="view-switch" role="group" aria-label="Result view">
               <button

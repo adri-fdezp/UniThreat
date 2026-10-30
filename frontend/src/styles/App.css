@@ -126,7 +126,15 @@ a { color: var(--accent); }
   background: var(--chrome-sunk);
 }
 .app-mark { flex-shrink: 0; }
-.title-bar strong { font-size: 16px; font-weight: 600; }
+/* Same treatment as the Never0Risk wordmark: Archivo 800, first brand letter in magenta */
+.wordmark {
+  font-family: "Archivo", var(--font);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #f3f2f2;
+}
+.wordmark span { color: #d6006e; }
 .title-meta {
   display: flex;
   gap: 14px;
@@ -342,7 +350,7 @@ a { color: var(--accent); }
 .module-progress-status.done    { color: var(--green); }
 .module-progress-status.error   { color: var(--red); }
 
-/* ── Centre: graph tab, toolbar, canvas ───────────────────────────────────── */
+/* ── Centre: toolbar and canvas ───────────────────────────────────────────── */
 .main-content {
   flex: 1;
   min-width: 0;
@@ -351,30 +359,6 @@ a { color: var(--accent); }
   overflow: hidden;
   background: var(--chrome);
 }
-
-.graph-tabs {
-  display: flex;
-  align-items: flex-end;
-  height: 25px;
-  padding: 0 4px;
-  flex-shrink: 0;
-  background: var(--chrome-sunk);
-}
-.graph-tab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 23px;
-  max-width: 260px;
-  padding: 0 12px;
-  background: var(--chrome);
-  border: 1px solid var(--line);
-  border-bottom: none;
-  border-radius: 3px 3px 0 0;
-  font-weight: 600;
-}
-.graph-tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.graph-tab svg { flex-shrink: 0; color: #5db2ee; }
 
 .graph-toolbar {
   display: flex;
