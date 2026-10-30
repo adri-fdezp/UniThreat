@@ -13,7 +13,9 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Allow the React frontend (localhost:5173) to call this API
+# Only the React frontend may call this API from a browser.  Leaving this open
+# would let any website the analyst visits start searches and read the results.
+CORS(app, origins=["http://localhost:5173", "http://127.0.0.1:5173"])
 
 # All active sessions are stored here in memory.
 # Each session holds the target info, results from each module, and a list of events
@@ -205,4 +207,6 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(port=5000, debug=True, threaded=True)
+    # Debug mode can run code through its interactive debugger, so it stays off
+    # unless FLASK_DEBUG=1 is set, which Flask reads for itself.
+    app.run(port=5000, threaded=True)
