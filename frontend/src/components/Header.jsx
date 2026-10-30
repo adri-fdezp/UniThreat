@@ -65,15 +65,8 @@ export default function Header({
   return (
     <header className="app-header">
       <div className="title-bar">
-        <svg className="app-mark" width="22" height="22" viewBox="0 0 20 20" aria-hidden="true">
-          <g fill="#5db2ee">
-            <circle cx="10" cy="4" r="2.600" />
-            <circle cx="3.500" cy="15" r="2.600" />
-            <circle cx="16.500" cy="15" r="2.600" />
-          </g>
-          <path d="M10 4 3.500 15h13Z" fill="none" stroke="#5db2ee" strokeWidth="1.300" />
-        </svg>
-        <strong>UniThreat</strong>
+        <img className="app-mark" src="/unithreat-mark-reversed.svg" width="24" height="24" alt="" />
+        <strong className="wordmark"><span>U</span>niThreat</strong>
         <span className="title-meta">
           <span>A Never0Risk app</span>
           <span>Version 0.2</span>

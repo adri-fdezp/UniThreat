@@ -165,7 +165,14 @@ const UI_ICONS = {
   palette: <path d="M3 3.500h14v13H3ZM8 3.500v13" />,
   dock: <path d="M3 3.500h14v13H3ZM12 3.500v13" />,
   output: <path d="M3 3.500h14v13H3ZM3 12h14" />,
-  graphView: <path d="M5 5a2 2 0 1 0 0 .01M15 4a2 2 0 1 0 0 .01M10 14a2 2 0 1 0 0 .01M6.500 6.500l2.500 5.700M13.500 5.800 11 12.200M7 4.300h6" />,
+  graphView: (
+    <>
+      <circle cx="10" cy="4.500" r="2.250" />
+      <circle cx="4.500" cy="15" r="2.250" />
+      <circle cx="15.500" cy="15" r="2.250" />
+      <path d="M8.960 6.490 5.540 13M11.040 6.490 14.460 13M6.750 15h6.500" />
+    </>
+  ),
   listView: <path d="M3 4.500h14M3 8.500h14M3 12.500h14M3 16.500h14" />,
   chevronUp: <path d="m5 12.500 5-5 5 5" />,
   chevronDown: <path d="m5 7.500 5 5 5-5" />,
