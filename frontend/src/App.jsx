@@ -1,39 +1,60 @@
 /**
  * App.jsx — Root component for UniThreat
  *
- * Manages the three-panel layout and all top-level application state:
- *   - LEFT SIDEBAR  : target form, module selection, live module status
- *   - CENTRE PANEL  : individual OSINT result cards (streamed in real time)
- *   - RIGHT SIDEBAR : Intel Workspace — pinned cards, analyst notes, AI output
+ * Manages the link-analysis workbench and all top-level application state:
+ *   - RIBBON        : run, selection, layout, zoom and panel controls
+ *   - LEFT PANEL    : target form, source selection, live source status
+ *   - GRAPH         : OSINT results as linked entities (streamed in real time),
+ *                     with an entity list view of the same results
+ *   - ACTIVITY LOG  : a running log of what each module returned
+ *   - RIGHT DOCK    : overview map, detail view, Intel workspace, spam checker
  *
  * Workflow:
- *   1. User fills in the target and selects modules → clicks EXECUTE
+ *   1. User fills in the target and selects sources → clicks Run analysis
  *   2. Backend runs modules in parallel and streams progress via SSE
- *   3. Results are flattened into individual cards as each module completes
- *   4. User pins relevant cards to the right workspace
- *   5. User adds analyst notes, selects analysis type, clicks GENERATE
+ *   3. Results are flattened into individual entities as each module completes
+ *   4. User pins relevant entities to the Intel workspace
+ *   5. User adds analyst notes, selects analysis type, clicks Generate
  *   6. Claude analyses the pinned data and returns a structured threat report
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { startGathering, streamResults, analyzeData } from "./api/profiler";
 import Header        from "./components/Header";
 import SearchForm    from "./components/SearchForm";
 import ProfileResults from "./components/ProfileResults";
 import TargetDossier from "./components/TargetDossier";
+import GraphCanvas, { Overview } from "./components/GraphCanvas";
+import { EntityIcon, UiIcon } from "./components/Icons";
+import { buildGraph, entityNode, matchesFilter } from "./graph/graphModel";
+import { useGraphView } from "./graph/useGraphView";
 import "./styles/App.css";
 
 // ── Module registry ────────────────────────────────────────────────────────
 // Add new OSINT modules here.  The id must match the backend module key.
 const ALL_MODULES = [
-  { id: "google",          label: "GOOGLE",          note: "Selenium — visible browser, manual CAPTCHA if needed" },
-  { id: "duckduckgo",      label: "DUCKDUCKGO",      note: "Fast API-based web dorks (15+ query templates)" },
-  { id: "instagram",       label: "INSTAGRAM",       note: "Public profile and recent posts (requires username)" },
-  { id: "linkedin",        label: "LINKEDIN",        note: "Full profile scrape — requires LinkedIn URL and credentials in .env" },
-  { id: "username_enum",   label: "USERNAME",        note: "500+ site enumeration via WhatsMyName dataset" },
-  { id: "email_osint",     label: "EMAIL OSINT",     note: "Gravatar lookup + Holehe site registrations" },
-  { id: "claude_research", label: "CLAUDE RESEARCH", note: "AI-driven OSINT profile — identity, presence, search queries" },
+  { id: "google",          label: "Google",          note: "Selenium — visible browser, manual CAPTCHA if needed" },
+  { id: "duckduckgo",      label: "DuckDuckGo",      note: "Fast API-based web dorks (15+ query templates)" },
+  { id: "instagram",       label: "Instagram",       note: "Profile and recent posts (requires username and a logged-in session)" },
+  { id: "linkedin",        label: "LinkedIn",        note: "Full profile scrape — requires LinkedIn URL and credentials in .env" },
+  { id: "username_enum",   label: "Username",        note: "500+ site enumeration via WhatsMyName dataset" },
+  { id: "email_osint",     label: "Email OSINT",     note: "Gravatar lookup + Holehe site registrations" },
+  { id: "claude_research", label: "Claude research", note: "AI-driven OSINT profile — identity, presence, search queries" },
 ];
+
+const EMPTY_TARGET = { name: "", username: "", email: "" };
+
+const STATUS_TEXT = { pending: "Waiting", running: "Running", done: "Finished", error: "Failed" };
+
+const GUIDE_STEPS = [
+  "Enter the person's name, plus any username, email or LinkedIn URL you know.",
+  "Tick the sources to search.",
+  "Select Run analysis. Entities appear on the graph as each source finishes.",
+  "Select an entity and pin the useful ones to the Intel workspace.",
+  "Add your notes, then generate the attack vector analysis.",
+];
+
+const logTime = () => new Date().toLocaleTimeString([], { hour12: false });
 
 // ── Data flattener ─────────────────────────────────────────────────────────
 /**
@@ -241,14 +262,43 @@ function flattenModuleData(moduleId, data) {
   return items;
 }
 
+// ── Output log ─────────────────────────────────────────────────────────────
+/** Running log of what each module did, newest line at the bottom. */
+function ActivityLog({ entries }) {
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [entries]);
+
+  return (
+    <section className="output-panel" aria-label="Activity log">
+      <h2 className="panel-title">Activity log</h2>
+      <div className="output-scroll" ref={scrollRef} role="log">
+        {entries.length === 0 && <div className="output-empty">Nothing has run yet.</div>}
+        {entries.map((entry) => (
+          <div key={entry.id} className={`output-line ${entry.level}`}>
+            <span className="output-time">{entry.time}</span>
+            <span className="output-source">{entry.source}</span>
+            <span className="output-text">{entry.text}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ── App ────────────────────────────────────────────────────────────────────
 export default function App() {
   // ── State ──────────────────────────────────────────────────────────────
-  const [target,          setTarget]          = useState({ name: "", username: "", email: "" });
+  const [target,          setTarget]          = useState(EMPTY_TARGET);
   const [selectedModules, setSelectedModules] = useState([]);
   const [isGathering,     setIsGathering]     = useState(false);
+  const [hasRun,          setHasRun]          = useState(false);  // a run has started on this graph
   const [moduleStatuses,  setModuleStatuses]  = useState({});
-  const [flatResults,     setFlatResults]     = useState([]);   // all individual result cards
+  const [moduleErrors,    setModuleErrors]    = useState({});
+  const [flatResults,     setFlatResults]     = useState([]);   // all individual results
   const [pinnedItems,     setPinnedItems]     = useState([]);   // items sent to workspace
   const [notes,           setNotes]           = useState("");   // analyst free-text notes
   const [analysisType,    setAnalysisType]    = useState("full");
@@ -256,10 +306,44 @@ export default function App() {
   const [analysis,        setAnalysis]        = useState(null);
   const [error,           setError]           = useState(null);
 
+  // View state: none of this changes what the modules do
+  const [selectedId,  setSelectedId]  = useState(null);
+  const [expanded,    setExpanded]    = useState([]);       // modules showing every result
+  const [filterText,  setFilterText]  = useState("");
+  const [mainView,    setMainView]    = useState("graph");  // "graph" | "list"
+  const [dockTab,     setDockTab]     = useState("detail");
+  const [canvasLight, setCanvasLight] = useState(false);
+  const [panels,      setPanels]      = useState({ palette: true, dock: true, output: true });
+  const [runLog,      setRunLog]      = useState([]);
+
   // Ref keeps the SSE EventSource so we can close it on reset
-  const esRef = useRef(null);
+  const esRef  = useRef(null);
+  const logSeq = useRef(0);
+
+  const activeModules = useMemo(
+    () => ALL_MODULES.filter((m) => selectedModules.includes(m.id)),
+    [selectedModules],
+  );
+
+  const graph = useMemo(
+    () => buildGraph({
+      target:   hasRun ? target : EMPTY_TARGET,
+      items:    flatResults,
+      modules:  activeModules,
+      statuses: moduleStatuses,
+      errors:   moduleErrors,
+      expanded,
+    }),
+    [hasRun, target, flatResults, activeModules, moduleStatuses, moduleErrors, expanded],
+  );
+  const graphView = useGraphView(graph);
 
   // ── Handlers ───────────────────────────────────────────────────────────
+
+  const addLog = (source, text, level = "info") =>
+    setRunLog((prev) => [...prev, { id: logSeq.current++, time: logTime(), source, text, level }]);
+
+  const moduleLabel = (id) => ALL_MODULES.find((m) => m.id === id)?.label || id;
 
   /** Toggle a module on/off in the selection list */
   const toggleModule = (id) =>
@@ -269,18 +353,24 @@ export default function App() {
 
   /**
    * Start an OSINT gathering session.
-   * Opens an SSE connection and appends result cards as modules complete.
+   * Opens an SSE connection and appends results as modules complete.
    */
   const handleSearch = async (targetData) => {
     if (selectedModules.length === 0)
-      return setError("Select at least one module before executing.");
+      return setError("Tick at least one source before running.");
     setError(null);
     setIsGathering(true);
+    setHasRun(true);
     setFlatResults([]);
     setModuleStatuses({});
+    setModuleErrors({});
     setPinnedItems([]);
     setAnalysis(null);
+    setSelectedId(null);
+    setExpanded([]);
     setTarget(targetData);
+    setRunLog([]);
+    addLog("Run", `Searching ${selectedModules.length} source${selectedModules.length !== 1 ? "s" : ""} for ${targetData.name}`);
 
     try {
       const { session_id } = await startGathering(targetData, selectedModules);
@@ -290,22 +380,36 @@ export default function App() {
         session_id,
         (update) => {
           if (!update.module) return;
-          setModuleStatuses((prev) => ({ ...prev, [update.module]: update.status }));
-          if (update.status === "done" && update.data) {
+          const label = moduleLabel(update.module);
+          // A module can finish normally yet report a failure in its data
+          const failure = update.data?.error;
+          setModuleStatuses((prev) => ({ ...prev, [update.module]: failure ? "error" : update.status }));
+
+          if (failure) {
+            setModuleErrors((prev) => ({ ...prev, [update.module]: failure }));
+            addLog(label, failure, "error");
+          } else if (update.status === "running") {
+            addLog(label, "Running");
+          } else if (update.status === "done" && update.data) {
             // Flatten module data and append to the results list
             const newItems = flattenModuleData(update.module, update.data);
             setFlatResults((prev) => [...prev, ...newItems]);
+            addLog(label, `Returned ${newItems.length} entit${newItems.length === 1 ? "y" : "ies"}`, "success");
           }
         },
-        () => setIsGathering(false)
+        () => {
+          setIsGathering(false);
+          addLog("Run", "All sources finished");
+        }
       );
     } catch (err) {
       setError(err.message || "Gathering failed — check the backend is running.");
+      addLog("Run", err.message || "Gathering failed", "error");
       setIsGathering(false);
     }
   };
 
-  /** Pin or unpin a result card.  Same function handles both directions. */
+  /** Pin or unpin a result.  Same function handles both directions. */
   const handlePinToggle = (item) => {
     setPinnedItems((prev) => {
       const exists = prev.find((p) => p.id === item.id);
@@ -314,7 +418,7 @@ export default function App() {
   };
 
   /**
-   * Send the pinned cards and analyst notes to the AI analyser.
+   * Send the pinned items and analyst notes to the AI analyser.
    * The backend forwards the curated data to Claude for threat assessment.
    */
   const handleAnalyze = async () => {
@@ -339,8 +443,10 @@ export default function App() {
       }
       const data = await analyzeData(target, curatedData, analysisType);
       setAnalysis(data.analysis);
+      addLog("Attack vectors", "Attack vector analysis generated", "success");
     } catch (err) {
       setError(err.message || "Analysis failed — check the API keys are set.");
+      addLog("Attack vectors", err.message || "Analysis failed", "error");
     } finally {
       setIsAnalyzing(false);
     }
@@ -349,152 +455,222 @@ export default function App() {
   /** Reset all state for a new search */
   const handleReset = () => {
     if (esRef.current) esRef.current.close();
-    setFlatResults([]); setModuleStatuses({});
+    setFlatResults([]); setModuleStatuses({}); setModuleErrors({});
     setPinnedItems([]); setAnalysis(null); setError(null);
     setIsGathering(false); setIsAnalyzing(false); setNotes("");
+    setHasRun(false); setTarget(EMPTY_TARGET); setRunLog([]);
+    setSelectedId(null); setExpanded([]); setFilterText("");
+    graphView.resetView();
+  };
+
+  /** Select a node and bring its properties into view. */
+  const handleSelect = (id) => {
+    setSelectedId(id);
+    if (id) setDockTab("detail");
+  };
+
+  const handleExpand = (moduleId) =>
+    setExpanded((prev) => (prev.includes(moduleId) ? prev : [...prev, moduleId]));
+
+  const handleOpenTab = (tab) => {
+    setDockTab(tab);
+    setPanels((prev) => ({ ...prev, dock: true }));
   };
 
   // ── Derived values ─────────────────────────────────────────────────────
   const hasResults    = flatResults.length > 0;
-  const doneCount     = Object.values(moduleStatuses).filter((s) => s === "done").length;
   const resultCounts  = flatResults.reduce((acc, item) => {
     acc[item.module] = (acc[item.module] || 0) + 1;
     return acc;
   }, {});
-  const statusLabel = isGathering
-    ? `GATHERING ${doneCount} / ${selectedModules.length}`
-    : isAnalyzing ? "ANALYZING…"
-    : hasResults  ? `${flatResults.length} RESULTS · ${pinnedItems.length} PINNED`
-    : "READY";
+
+  // A result can be selected from the list while hidden in a collection on the graph
+  const selectedNode = useMemo(() => {
+    if (!selectedId) return null;
+    const onGraph = graph.nodes.find((n) => n.id === selectedId);
+    if (onGraph) return onGraph;
+    const item = flatResults.find((i) => `e_${i.id}` === selectedId);
+    return item ? entityNode(item) : null;
+  }, [selectedId, graph, flatResults]);
+
+  const pinnedIds = useMemo(() => new Set(pinnedItems.map((p) => p.id)), [pinnedItems]);
+
+  const filteredCount = useMemo(
+    () => flatResults.filter((r) => matchesFilter(r, filterText)).length,
+    [flatResults, filterText],
+  );
+
+  const canvasClass = canvasLight ? "canvas-light" : "";
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div className="app-container">
-      <Header statusLabel={statusLabel} isLive={isGathering || isAnalyzing} />
+      <Header
+        canRun={!isGathering && !hasRun}
+        onNewGraph={hasRun ? handleReset : null}
+        selection={selectedNode}
+        isPinned={!!selectedNode?.item && pinnedIds.has(selectedNode.item.id)}
+        onPinToggle={handlePinToggle}
+        onExpand={handleExpand}
+        onOpenTab={handleOpenTab}
+        graphView={graphView}
+        canvasLight={canvasLight}
+        onCanvasLight={setCanvasLight}
+        panels={panels}
+        onPanelToggle={(name) => setPanels((prev) => ({ ...prev, [name]: !prev[name] }))}
+      />
 
       <div className="workspace">
 
-        {/* ── LEFT SIDEBAR ────────────────────────────────────────────── */}
-        <aside className="sidebar">
+        {/* ── LEFT PANEL ──────────────────────────────────────────────── */}
+        <aside className={`sidebar ${panels.palette ? "" : "is-hidden"}`}>
           <div className="sidebar-scroll">
 
             {/* Target input */}
-            <div>
-              <label className="section-label">TARGET</label>
+            <section>
+              <h2 className="panel-title">Target</h2>
               <SearchForm
                 onSearch={handleSearch}
                 isLoading={isGathering}
-                onReset={hasResults || isGathering ? handleReset : null}
+                onReset={hasRun ? handleReset : null}
               />
-            </div>
+            </section>
 
             {/* Module selection — visible only before the first search */}
-            {!isGathering && !hasResults && (
-              <div>
-                <label className="section-label">MODULES</label>
+            {!hasRun && (
+              <section>
+                <h2 className="panel-title">Sources ({selectedModules.length} of {ALL_MODULES.length})</h2>
                 <div className="module-list">
                   {ALL_MODULES.map((mod) => (
-                    <button
+                    <label
                       key={mod.id}
                       className={`module-toggle ${selectedModules.includes(mod.id) ? "active" : ""}`}
-                      onClick={() => toggleModule(mod.id)}
                       title={mod.note}
                     >
-                      <span className="module-toggle-dot" />
-                      {mod.label}
-                    </button>
+                      <input
+                        type="checkbox"
+                        checked={selectedModules.includes(mod.id)}
+                        onChange={() => toggleModule(mod.id)}
+                      />
+                      <EntityIcon name={`mod_${mod.id}`} size={20} />
+                      <span>{mod.label}</span>
+                    </label>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Module status — visible during and after gathering */}
-            {(isGathering || hasResults) && (
-              <div>
-                <label className="section-label">MODULE STATUS</label>
+            {hasRun && (
+              <section>
+                <h2 className="panel-title">Sources</h2>
                 <div className="module-progress">
-                  {ALL_MODULES.filter((m) => selectedModules.includes(m.id)).map((mod) => {
+                  {activeModules.map((mod) => {
                     const status = moduleStatuses[mod.id] || "pending";
                     const count  = resultCounts[mod.id] || 0;
                     return (
-                      <div key={mod.id} className="module-progress-row">
-                        <span className={`dot ${status}`} />
-                        <span style={{ flex: 1, fontSize: 10 }}>{mod.label}</span>
-                        {count > 0 && (
-                          <span style={{ fontSize: 9, color: "var(--accent)", fontWeight: 700, marginRight: 6 }}>
-                            {count}
-                          </span>
-                        )}
-                        <span style={{ fontSize: 9, color: "var(--text-dim)" }}>{status}</span>
-                      </div>
+                      <button
+                        type="button"
+                        key={mod.id}
+                        className={`module-progress-row ${selectedId === `hub_${mod.id}` ? "selected" : ""}`}
+                        onClick={() => handleSelect(`hub_${mod.id}`)}
+                      >
+                        <EntityIcon name={`mod_${mod.id}`} size={20} />
+                        <span className="module-progress-name">{mod.label}</span>
+                        {count > 0 && <span className="module-progress-count">{count}</span>}
+                        <span className={`module-progress-status ${status}`}>{STATUS_TEXT[status]}</span>
+                      </button>
                     );
                   })}
                 </div>
-              </div>
+              </section>
             )}
-
-            {/* Status block — pinned to the bottom of the sidebar */}
-            <div className="status-block">
-              <label className="section-label">STATUS</label>
-              <div className={`status-text ${isGathering || isAnalyzing ? "pulse" : ""}`}>
-                {statusLabel}
-              </div>
-            </div>
           </div>
         </aside>
 
-        {/* ── CENTRE PANEL ─────────────────────────────────────────────── */}
+        {/* ── GRAPH ────────────────────────────────────────────────────── */}
         <main className="main-content">
+          <div className="graph-tabs">
+            <div className="graph-tab">
+              <UiIcon name="graphView" size={14} />
+              <span>{target.name || "New graph"}</span>
+            </div>
+          </div>
+
+          <div className="graph-toolbar">
+            <div className="view-switch" role="group" aria-label="Result view">
+              <button
+                type="button"
+                className={mainView === "graph" ? "active" : ""}
+                aria-pressed={mainView === "graph"}
+                onClick={() => setMainView("graph")}
+              >
+                <UiIcon name="graphView" size={14} /> Main view
+              </button>
+              <button
+                type="button"
+                className={mainView === "list" ? "active" : ""}
+                aria-pressed={mainView === "list"}
+                onClick={() => setMainView("list")}
+              >
+                <UiIcon name="listView" size={14} /> Entity list
+              </button>
+            </div>
+            <input
+              className="filter-input"
+              type="search"
+              placeholder="Filter results by keyword…"
+              aria-label="Filter results by keyword"
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+            />
+            {hasResults && <span className="result-count">{filteredCount} of {flatResults.length} results</span>}
+          </div>
+
           {error && <div className="error-banner">{error}</div>}
 
-          {/* Welcome screen with step-by-step guide */}
-          {!isGathering && !hasResults && (
-            <div className="empty-results">
-              <div className="empty-results-title">UNITHREAT</div>
-              <div className="empty-results-sub">
-                Passive OSINT profiling for academic security research
-              </div>
-              <div className="step-guide">
-                {[
-                  "Enter target details in the left panel",
-                  "Select the OSINT modules to run",
-                  "Click EXECUTE — results stream in as modules finish",
-                  "Pin relevant cards to the Intel Workspace →",
-                  "Add analyst notes, then generate the AI threat assessment",
-                ].map((step, i) => (
-                  <div key={i} className="step-guide-row">
-                    <div className="step-guide-num">{i + 1}</div>
-                    <div>{step}</div>
-                  </div>
-                ))}
-              </div>
+          <div className={`graph-stage ${canvasClass}`}>
+            <div className={`graph-layer ${hasRun && mainView === "list" ? "is-behind" : ""}`}>
+              <GraphCanvas
+                graph={graph}
+                graphView={graphView}
+                selectedId={selectedId}
+                onSelect={handleSelect}
+                onExpand={handleExpand}
+                pinnedIds={pinnedIds}
+                filterText={filterText}
+              />
             </div>
-          )}
 
-          {/* Gathering spinner — shown while modules run but no results yet */}
-          {isGathering && !hasResults && (
-            <div className="empty-results">
-              <div className="spinner-ring" />
-              <div className="empty-results-title">GATHERING</div>
-              <div className="empty-results-sub">
-                Running {selectedModules.length} module{selectedModules.length !== 1 ? "s" : ""}.
-                Results will appear here as each module completes.
+            {/* Welcome guide, drawn on the empty canvas */}
+            {!hasRun && (
+              <div className="graph-guide">
+                <h1>Start an investigation</h1>
+                <ol>
+                  {GUIDE_STEPS.map((step) => <li key={step}>{step}</li>)}
+                </ol>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Result cards — rendered as they stream in */}
-          {hasResults && (
-            <ProfileResults
-              flatResults={flatResults}
-              pinnedItems={pinnedItems}
-              onPinToggle={handlePinToggle}
-              isGathering={isGathering}
-            />
-          )}
+            {hasRun && mainView === "list" && (
+              <div className="list-layer">
+                <ProfileResults
+                  flatResults={flatResults}
+                  pinnedItems={pinnedItems}
+                  onPinToggle={handlePinToggle}
+                  isGathering={isGathering}
+                  filterText={filterText}
+                  selectedId={selectedId}
+                  onSelect={handleSelect}
+                />
+              </div>
+            )}
+          </div>
+
+          {panels.output && <ActivityLog entries={runLog} />}
         </main>
 
-        {/* ── RIGHT SIDEBAR — Intel Workspace ──────────────────────────── */}
+        {/* ── RIGHT DOCK ───────────────────────────────────────────────── */}
         <TargetDossier
           target={target}
           pinnedItems={pinnedItems}
@@ -506,6 +682,13 @@ export default function App() {
           onGenerate={handleAnalyze}
           isAnalyzing={isAnalyzing}
           analysis={analysis}
+          activeTab={dockTab}
+          onTabChange={setDockTab}
+          selectedNode={selectedNode}
+          onPinToggle={handlePinToggle}
+          onExpand={handleExpand}
+          hidden={!panels.dock}
+          overview={<Overview graph={graph} graphView={graphView} canvasClass={canvasClass} />}
         />
       </div>
     </div>
