@@ -7,7 +7,7 @@
  *   - GRAPH         : OSINT results as linked entities (streamed in real time),
  *                     with an entity list view of the same results
  *   - ACTIVITY LOG  : a running log of what each module returned
- *   - RIGHT DOCK    : overview map, detail view, Intel workspace, spam checker
+ *   - RIGHT DOCK    : overview map, detail view, Intel workspace, spam checker, help
  *
  * Workflow:
  *   1. User fills in the target and selects sources → clicks Run analysis
@@ -32,14 +32,19 @@ import "./styles/App.css";
 
 // ── Module registry ────────────────────────────────────────────────────────
 // Add new OSINT modules here.  The id must match the backend module key.
+const SOURCE_GROUPS = ["Search engines", "Image intelligence", "Social media", "Identity lookups", "AI research"];
+
 const ALL_MODULES = [
-  { id: "google",          label: "Google",          note: "Selenium — visible browser, manual CAPTCHA if needed" },
-  { id: "duckduckgo",      label: "DuckDuckGo",      note: "Fast API-based web dorks (15+ query templates)" },
-  { id: "instagram",       label: "Instagram",       note: "Profile and recent posts (requires username and a logged-in session)" },
-  { id: "linkedin",        label: "LinkedIn",        note: "Full profile scrape — requires LinkedIn URL and credentials in .env" },
-  { id: "username_enum",   label: "Username",        note: "500+ site enumeration via WhatsMyName dataset" },
-  { id: "email_osint",     label: "Email OSINT",     note: "Gravatar lookup + Holehe site registrations" },
-  { id: "claude_research", label: "Claude research", note: "AI-driven OSINT profile — identity, presence, search queries" },
+  { id: "google",          label: "Google",          group: "Search engines",   note: "Runs targeted Google searches in a Chrome window. If Google shows a CAPTCHA, solve it in that window within 90 seconds." },
+  { id: "duckduckgo",      label: "DuckDuckGo",      group: "Search engines",   note: "Runs targeted searches by name, username and email. Free, with no key or browser needed." },
+  { id: "brave",           label: "Brave",           group: "Search engines",   note: "Runs the same targeted searches through Brave's official API, with no CAPTCHAs. Needs BRAVE_API_KEY, and each query uses paid credit." },
+  { id: "image_search",    label: "Image search",    group: "Image intelligence", note: "Finds images on the web by name, username and email. Free, with no key needed. A match doesn't prove an image shows the target." },
+  { id: "image_analysis",  label: "Image analysis",  group: "Image intelligence", note: "Reads the metadata of the image you upload, then sends a copy to Claude to report what it exposes. Doesn't identify people by their face. Needs ANTHROPIC_API_KEY." },
+  { id: "instagram",       label: "Instagram",       group: "Social media",     note: "Reads a profile and up to 15 recent posts. Needs the target's username and a logged-in Instagram session." },
+  { id: "linkedin",        label: "LinkedIn",        group: "Social media",     note: "Reads a profile in a Chrome window once you sign in there. Needs the target's LinkedIn URL." },
+  { id: "username_enum",   label: "Username",        group: "Identity lookups", note: "Checks whether the username exists on 500+ websites, using the WhatsMyName dataset." },
+  { id: "email_osint",     label: "Email OSINT",     group: "Identity lookups", note: "Looks up a public Gravatar profile and checks about 130 websites for accounts using the email." },
+  { id: "claude_research", label: "Claude research", group: "AI research",      note: "Uses Claude with web search to build a profile, marking findings as confirmed or inferred. Needs ANTHROPIC_API_KEY." },
 ];
 
 const EMPTY_TARGET = { name: "", username: "", email: "" };
@@ -72,7 +77,7 @@ function flattenModuleData(moduleId, data) {
   if (!data || data.error) return items;
 
   let seq = 0;
-  const push = (category, title, url, content) =>
+  const push = (category, title, url, content, extra = {}) =>
     items.push({
       id:       `${moduleId}_${seq++}`,
       module:   moduleId,
@@ -80,15 +85,37 @@ function flattenModuleData(moduleId, data) {
       title:    title    || "(no title)",
       url:      url      || "",
       content:  content  || "",
+      ...extra,
     });
 
   switch (moduleId) {
-    // Google and DuckDuckGo share the same flat structure — one card per hit
+    // The search engines share the same flat structure — one card per hit
     case "google":
-    case "duckduckgo": {
+    case "duckduckgo":
+    case "brave": {
       (data.results || []).forEach((r) => {
         if (!r.error) push(r.category || "Search", r.title, r.url, r.description);
       });
+      break;
+    }
+
+    case "image_search": {
+      (data.results || []).forEach((r) => {
+        if (r.error) return;
+        push(
+          r.category,
+          r.title,
+          r.url,
+          [r.description, `Image: ${r.image}`, "Found by searching, so it may show someone else."]
+            .filter(Boolean).join("\n"),
+          { thumbnail: r.thumbnail, imageUrl: r.image },
+        );
+      });
+      break;
+    }
+
+    case "image_analysis": {
+      (data.findings || []).forEach((f) => push(f.category, f.title, f.url, f.content));
       break;
     }
 
@@ -309,9 +336,11 @@ export default function App() {
   // View state: none of this changes what the modules do
   const [selectedId,  setSelectedId]  = useState(null);
   const [expanded,    setExpanded]    = useState([]);       // modules showing every result
+  const [openNotes,   setOpenNotes]   = useState([]);       // sources showing their description
   const [filterText,  setFilterText]  = useState("");
   const [mainView,    setMainView]    = useState("graph");  // "graph" | "list"
   const [dockTab,     setDockTab]     = useState("detail");
+  const [helpTopic,   setHelpTopic]   = useState("run");    // "run" | "tips"
   const [canvasLight, setCanvasLight] = useState(false);
   const [panels,      setPanels]      = useState({ palette: true, dock: true, output: true });
   const [runLog,      setRunLog]      = useState([]);
@@ -345,6 +374,10 @@ export default function App() {
 
   const moduleLabel = (id) => ALL_MODULES.find((m) => m.id === id)?.label || id;
 
+  /** Show or hide a source's description in the selection list */
+  const toggleNote = (id) =>
+    setOpenNotes((prev) => (prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]));
+
   /** Toggle a module on/off in the selection list */
   const toggleModule = (id) =>
     setSelectedModules((prev) =>
@@ -355,7 +388,7 @@ export default function App() {
    * Start an OSINT gathering session.
    * Opens an SSE connection and appends results as modules complete.
    */
-  const handleSearch = async (targetData) => {
+  const handleSearch = async ({ image, ...targetData }) => {
     if (selectedModules.length === 0)
       return setError("Tick at least one source before running.");
     setError(null);
@@ -373,7 +406,11 @@ export default function App() {
     addLog("Run", `Searching ${selectedModules.length} source${selectedModules.length !== 1 ? "s" : ""} for ${targetData.name}`);
 
     try {
-      const { session_id } = await startGathering(targetData, selectedModules);
+      // The image only leaves the browser when the source that reads it is ticked
+      const { session_id } = await startGathering(
+        selectedModules.includes("image_analysis") ? { ...targetData, image } : targetData,
+        selectedModules,
+      );
       if (esRef.current) esRef.current.close();
 
       esRef.current = streamResults(
@@ -477,6 +514,11 @@ export default function App() {
     setPanels((prev) => ({ ...prev, dock: true }));
   };
 
+  const handleOpenHelp = (topic) => {
+    setHelpTopic(topic);
+    handleOpenTab("help");
+  };
+
   // ── Derived values ─────────────────────────────────────────────────────
   const hasResults    = flatResults.length > 0;
   const resultCounts  = flatResults.reduce((acc, item) => {
@@ -513,6 +555,7 @@ export default function App() {
         onPinToggle={handlePinToggle}
         onExpand={handleExpand}
         onOpenTab={handleOpenTab}
+        onOpenHelp={handleOpenHelp}
         graphView={graphView}
         canvasLight={canvasLight}
         onCanvasLight={setCanvasLight}
@@ -533,6 +576,9 @@ export default function App() {
                 onSearch={handleSearch}
                 isLoading={isGathering}
                 onReset={hasRun ? handleReset : null}
+                onImageChosen={() =>
+                  setSelectedModules((prev) => (prev.includes("image_analysis") ? prev : [...prev, "image_analysis"]))
+                }
               />
             </section>
 
@@ -541,20 +587,40 @@ export default function App() {
               <section>
                 <h2 className="panel-title">Sources ({selectedModules.length} of {ALL_MODULES.length})</h2>
                 <div className="module-list">
-                  {ALL_MODULES.map((mod) => (
-                    <label
-                      key={mod.id}
-                      className={`module-toggle ${selectedModules.includes(mod.id) ? "active" : ""}`}
-                      title={mod.note}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedModules.includes(mod.id)}
-                        onChange={() => toggleModule(mod.id)}
-                      />
-                      <EntityIcon name={`mod_${mod.id}`} size={20} />
-                      <span>{mod.label}</span>
-                    </label>
+                  {SOURCE_GROUPS.map((group) => (
+                    <div key={group} role="group" aria-label={group}>
+                      <h3 className="module-group-title">{group}</h3>
+                      {ALL_MODULES.filter((mod) => mod.group === group).map((mod) => {
+                        const noteOpen = openNotes.includes(mod.id);
+                        return (
+                          <div key={mod.id}>
+                            <div className={`module-row ${selectedModules.includes(mod.id) ? "active" : ""}`}>
+                              <label className="module-toggle">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedModules.includes(mod.id)}
+                                  onChange={() => toggleModule(mod.id)}
+                                />
+                                <EntityIcon name={`mod_${mod.id}`} size={20} />
+                                <span>{mod.label}</span>
+                              </label>
+                              <button
+                                type="button"
+                                className="module-info"
+                                aria-label={`About ${mod.label}`}
+                                aria-expanded={noteOpen}
+                                aria-controls={`note_${mod.id}`}
+                                title={noteOpen ? "Hide description" : "Show description"}
+                                onClick={() => toggleNote(mod.id)}
+                              >
+                                <span aria-hidden="true">i</span>
+                              </button>
+                            </div>
+                            <p id={`note_${mod.id}`} className="module-note" hidden={!noteOpen}>{mod.note}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ))}
                 </div>
               </section>
@@ -677,6 +743,8 @@ export default function App() {
           analysis={analysis}
           activeTab={dockTab}
           onTabChange={setDockTab}
+          helpTopic={helpTopic}
+          onHelpTopicChange={setHelpTopic}
           selectedNode={selectedNode}
           onPinToggle={handlePinToggle}
           onExpand={handleExpand}

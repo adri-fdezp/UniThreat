@@ -10,6 +10,7 @@
  *   selection  {object}   - Selected node, or null
  *   isPinned   {boolean}  - True when the selected entity is pinned
  *   onPinToggle, onExpand, onOpenTab - Selection and panel actions
+ *   onOpenHelp {Function} - Opens the Help tab on a topic ("run" | "tips")
  *   graphView  {object}   - Everything returned by useGraphView
  *   canvasLight, onCanvasLight - Graph canvas colour
  *   panels, onPanelToggle      - { palette, dock, output } visibility
@@ -50,6 +51,7 @@ export default function Header({
   onPinToggle,
   onExpand,
   onOpenTab,
+  onOpenHelp,
   graphView,
   canvasLight,
   onCanvasLight,
@@ -132,6 +134,11 @@ export default function Header({
           <RibbonGroup title="Tools">
             <RibbonButton icon="workspace" label="Intel workspace" onClick={() => onOpenTab("intel")} />
             <RibbonButton icon="mail" label="Spam checker" onClick={() => onOpenTab("spam")} />
+          </RibbonGroup>
+
+          <RibbonGroup title="Help">
+            <RibbonButton icon="terminal" label="How to run" onClick={() => onOpenHelp("run")} />
+            <RibbonButton icon="lightbulb" label="Usage tips" onClick={() => onOpenHelp("tips")} />
           </RibbonGroup>
         </div>
       )}

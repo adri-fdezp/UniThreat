@@ -36,6 +36,12 @@ export default function DetailView({ node, isPinned, onPinToggle, onExpand }) {
         <div className="detail-title">{node.label}</div>
       </div>
 
+      {safeUrl(item?.thumbnail) && (
+        <a className="detail-image" href={safeUrl(item.imageUrl)} target="_blank" rel="noreferrer" title="Open the full image">
+          <img src={safeUrl(item.thumbnail)} alt={`Preview of ${node.label}`} />
+        </a>
+      )}
+
       <dl className="property-grid">
         {node.kind === "person" && (
           <>

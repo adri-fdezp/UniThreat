@@ -26,6 +26,10 @@ function iconForItem(item) {
       return item.category === "Gravatar" ? "profile" : "email";
     case "claude_research":
       return "document";
+    case "image_search":
+      return "image";
+    case "image_analysis":
+      return "document";
     default:
       return item.url ? "website" : "document";
   }

@@ -8,3 +8,4 @@ holehe
 python-dotenv
 selenium
 webdriver-manager
+pillow

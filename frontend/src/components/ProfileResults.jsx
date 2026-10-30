@@ -23,11 +23,14 @@ import { entityNode, matchesFilter, safeUrl } from "../graph/graphModel";
 const MODULE_LABELS = {
   google:          "Google",
   duckduckgo:      "DuckDuckGo",
+  brave:           "Brave",
   instagram:       "Instagram",
   linkedin:        "LinkedIn",
   username_enum:   "Username",
   email_osint:     "Email OSINT",
   claude_research: "Claude research",
+  image_search:    "Image search",
+  image_analysis:  "Image analysis",
 };
 
 export default function ProfileResults({ flatResults, pinnedItems, onPinToggle, isGathering, filterText, selectedId, onSelect }) {

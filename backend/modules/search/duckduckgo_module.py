@@ -2,8 +2,10 @@
 # Runs a set of targeted search queries (dorks) against DuckDuckGo.
 # No API key or login needed — uses the ddgs library.
 # Covers: social media, documents, contact info, news, images, and more.
+# Results from every query are merged and ranked, so the best matches come first.
 
 from modules.base import BaseModule
+from modules.search.ranking import build_response
 from ddgs import DDGS
 
 
@@ -61,14 +63,18 @@ class DuckDuckGoModule(BaseModule):
             for label, q in queries:
                 try:
                     hits = list(ddgs.text(q, max_results=8))
-                    for h in hits:
+                    for position, h in enumerate(hits, start=1):
+                        # Without a URL there's nothing to open or tell apart from other hits
+                        if not h.get("href"):
+                            continue
                         results.append({
                             "category":    label,
                             "title":       h.get("title", ""),
-                            "url":         h.get("href", ""),
+                            "url":         h["href"],
                             "description": h.get("body", ""),
+                            "position":    position,
                         })
                 except Exception as exc:
                     results.append({"category": label, "error": str(exc)})
 
-        return {"total": len(results), "results": results}
+        return build_response(results, target)

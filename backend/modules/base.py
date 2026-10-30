@@ -17,6 +17,7 @@ class BaseModule(ABC):
             name     (str) — full name, always present
             username (str) — social handle, may be empty
             email    (str) — email address, may be empty
+            image    (dict) — uploaded image as { filename, data (base64) }, may be None
 
         Return a dict with the results, or {"error": "message"} on failure.
         """

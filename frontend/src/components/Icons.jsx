@@ -56,6 +56,13 @@ const ENTITY_ICONS = {
       <path d="M16 20h17M16 26h17M16 32h17M16 38h10" stroke="#65727e" strokeWidth="2.2" strokeLinecap="round" />
     </>
   ),
+  image: (
+    <>
+      <rect x="4" y="8" width="40" height="32" rx="3.5" fill="#d9825b" />
+      <circle cx="16" cy="18" r="4" fill="#fbe6da" />
+      <path d="M8 36 19 25l7 7 6-6 8 10Z" fill="#fbe6da" />
+    </>
+  ),
   post: (
     <>
       <path d="M6 7h36a2 2 0 0 1 2 2v24a2 2 0 0 1-2 2H22l-9 9v-9H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" fill="#dd5f93" />
@@ -92,6 +99,23 @@ const ENTITY_ICONS = {
   ),
   mod_google: <>{hex("#bd8f12")}{magnifier}</>,
   mod_duckduckgo: <>{hex("#d4692a")}{magnifier}</>,
+  mod_brave: <>{hex("#5f7d2e")}{magnifier}</>,
+  mod_image_search: (
+    <>
+      {hex("#b5623a")}
+      <circle cx="21.5" cy="21.5" r="8" fill="none" stroke={hexGlyph} strokeWidth="3" />
+      <path d="m27.500 27.500 6.500 6.500" stroke={hexGlyph} strokeWidth="3.400" strokeLinecap="round" />
+      <path d="m16.500 24.500 3.500-3.500 2 2 1.500-1.500 2 3" fill="none" stroke={hexGlyph} strokeWidth="1.800" strokeLinejoin="round" />
+    </>
+  ),
+  mod_image_analysis: (
+    <>
+      {hex("#8f4f7a")}
+      <rect x="12.500" y="15" width="23" height="18" rx="2" fill="none" stroke={hexGlyph} strokeWidth="2.600" />
+      <circle cx="19" cy="21" r="2.200" fill={hexGlyph} />
+      <path d="m15.500 30.500 6-6 3.500 3.500 3-3 4.500 5.500" fill="none" stroke={hexGlyph} strokeWidth="2.200" strokeLinejoin="round" />
+    </>
+  ),
   mod_instagram: (
     <>
       {hex("#b5458f")}
@@ -133,9 +157,10 @@ const ENTITY_ICONS = {
 export const ICON_COLOURS = {
   person: "#5db2ee", alias: "#8d6fd8", email: "#eeb23f", website: "#3fa76a",
   document: "#c5ccd3", post: "#dd5f93", profile: "#2fa2a5", timeline: "#5a7bc9",
-  collection: "#8c959e", mod_google: "#bd8f12", mod_duckduckgo: "#d4692a",
+  collection: "#8c959e", mod_google: "#bd8f12", mod_duckduckgo: "#d4692a", mod_brave: "#5f7d2e",
   mod_instagram: "#b5458f", mod_linkedin: "#2d73b5", mod_username_enum: "#7555c4",
   mod_email_osint: "#c2483f", mod_claude_research: "#23887f",
+  image: "#d9825b", mod_image_search: "#b5623a", mod_image_analysis: "#8f4f7a",
 };
 
 /** Entity pictogram.  Works inside HTML, or inside another SVG using x and y. */
@@ -155,6 +180,8 @@ const UI_ICONS = {
   expand: <path d="M3 8V3h5M17 12v5h-5M3 3l5.500 5.500M17 17l-5.500-5.500" />,
   workspace: <path d="M3 3.500h14v13H3ZM3 7.500h14M8 7.500v9" />,
   mail: <path d="M2.500 5h15v10.500h-15ZM3 5.500l7 5.500 7-5.500" />,
+  terminal: <path d="M3 3.500h14v13H3ZM6 7.500 9 10l-3 2.500M10.500 12.500H14" />,
+  lightbulb: <path d="M10 2.500a5 5 0 0 0-3 9c.6.500 1 1.100 1 1.900v.100h4v-.100c0-.800.400-1.400 1-1.900a5 5 0 0 0-3-9ZM8 16h4M9 17.800h2" />,
   block: <path d="M3 3h4v4H3Zm5 0h4v4H8Zm5 0h4v4h-4ZM3 8h4v4H3Zm5 0h4v4H8Zm5 0h4v4h-4ZM3 13h4v4H3Zm5 0h4v4H8Z" />,
   hierarchical: <path d="M8 2.500h4v3.500H8ZM2.500 14h4v3.500h-4Zm5.500 0h4v3.500H8Zm5.500 0h4v3.500h-4ZM10 6v8M4.500 14v-3.500h11V14" />,
   circular: <path d="M10 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM10 2.500v3M10 14.500v3M2.500 10h3M14.500 10h3M4.700 4.700l2.100 2.100M13.200 13.200l2.100 2.100M15.300 4.700l-2.100 2.100M6.800 13.200l-2.100 2.100" />,

@@ -18,7 +18,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { EntityIcon, ICON_COLOURS } from "./Icons";
-import { matchesFilter } from "../graph/graphModel";
+import { matchesFilter, safeUrl } from "../graph/graphModel";
 
 const NODE_RADIUS = 30;
 const DOT_ZOOM = 0.38;     // below this, draw dots instead of pictures
@@ -242,6 +242,17 @@ export default function GraphCanvas({ graph, graphView, selectedId, onSelect, on
                   <rect className="node-halo" x={-size / 2 - 7} y={-size / 2 - 7} width={size + 14} height={size + 14} rx="8" />
                   {status === "running" && <circle className="node-running" r={size / 2 + 4} />}
                   <EntityIcon name={node.icon} size={size} x={-size / 2} y={-size / 2} />
+                  {/* Image results show their picture, with the icon left behind it in case it fails to load */}
+                  {safeUrl(node.item?.thumbnail) && (
+                    <image
+                      href={safeUrl(node.item.thumbnail)}
+                      x={-size / 2}
+                      y={-size / 2}
+                      width={size}
+                      height={size}
+                      preserveAspectRatio="xMidYMid slice"
+                    />
+                  )}
 
                   {/* Count badge on hubs, and a failed marker when a module errors */}
                   {node.kind === "hub" && status === "error" && (

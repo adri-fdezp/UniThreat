@@ -41,6 +41,9 @@ UniThreat is a modular OSINT platform built for security researchers. It runs mu
 |---|---|
 | **Google** | Selenium-based Google dorking with anti-detection |
 | **DuckDuckGo** | Privacy-respecting search via `ddgs` |
+| **Brave Search** | Official search API, needs `BRAVE_API_KEY` |
+| **Image Search** | Finds images by name, username, and email via `ddgs` |
+| **Image Analysis** | Reads an uploaded image's EXIF metadata and analyzes its content with Claude, needs `ANTHROPIC_API_KEY` |
 | **Instagram** | Profile and post scraping via Instaloader |
 | **LinkedIn** | Public profile and post collection |
 | **Username Enumerator** | Cross-platform username presence check (Holehe) |
@@ -101,6 +104,9 @@ cp backend/.env.example backend/.env
 
 # Required for Claude Research and Attack Analyzer
 ANTHROPIC_API_KEY=your_anthropic_key_here
+
+# Required for the Brave Search module
+BRAVE_API_KEY=your_brave_key_here
 ```
 
 > **Never commit your `.env` file.** It is already listed in `.gitignore`.

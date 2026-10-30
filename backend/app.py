@@ -27,11 +27,14 @@ sessions = {}
 _MODULE_REGISTRY = {
     "google":          ("modules.search.google_module",      "GoogleModule"),
     "duckduckgo":      ("modules.search.duckduckgo_module",  "DuckDuckGoModule"),
+    "brave":           ("modules.search.brave_module",       "BraveModule"),
     "instagram":       ("modules.social.instagram_module",   "InstagramModule"),
     "linkedin":        ("modules.social.linkedin_module",    "LinkedInModule"),
     "username_enum":   ("modules.username.enumerator_module","UsernameEnumerator"),
     "email_osint":     ("modules.email_osint.hibp_module",   "EmailOsintModule"),
     "claude_research": ("modules.ai.claude_research_module", "ClaudeResearchModule"),
+    "image_search":    ("modules.image.image_search_module", "ImageSearchModule"),
+    "image_analysis":  ("modules.image.image_analysis_module", "ImageAnalysisModule"),
 }
 
 
@@ -59,7 +62,7 @@ def _run_modules(session_id: str, target: dict, modules_to_run: list) -> None:
         try:
             Cls = _get_module_class(mod_key)
             if not Cls:
-                return
+                raise ValueError(f"Unknown module '{mod_key}' — restart the backend if it was just added.")
             result = Cls().run(target)
             session["results"][mod_key] = {"status": "done", "data": result}
             _push(session, {"module": mod_key, "status": "done", "data": result})
@@ -84,7 +87,7 @@ def gather():
     """
     Start a new OSINT session.
 
-    Body: { name, username?, email?, modules?: [list of module IDs] }
+    Body: { name, username?, email?, image?: { filename, data (base64) }, modules?: [list of module IDs] }
     Returns: { session_id }
     """
     data = request.get_json()
@@ -107,10 +110,13 @@ def gather():
         "complete": False,
     }
 
+    # The uploaded image goes to the modules only, so the session never stores it
+    run_target = {**target, "image": data.get("image")}
+
     # Run modules in a background thread so the HTTP response returns immediately
     threading.Thread(
         target=_run_modules,
-        args=(session_id, target, modules_to_run),
+        args=(session_id, run_target, modules_to_run),
         daemon=True,
     ).start()
 

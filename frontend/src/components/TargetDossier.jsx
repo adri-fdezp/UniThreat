@@ -2,7 +2,7 @@
  * TargetDossier.jsx — Right dock
  *
  * Top: Overview map of the whole graph.
- * Below, three tabs:
+ * Below, four tabs:
  *   - Detail view     : properties of the selected entity
  *   - Intel workspace : where the analyst builds the intelligence brief
  *       1. Pinned results — entities pinned from the graph or list
@@ -11,6 +11,7 @@
  *       4. Generate       — triggers the Claude threat assessment
  *       5. AI output      — the structured analysis result
  *   - Spam checker    : SpamAssassin email scoring
+ *   - Help            : how to run the app, and usage tips
  *
  * Props:
  *   target               {object}   - { name, username, email }
@@ -23,8 +24,10 @@
  *   onGenerate           {Function} - Triggers the AI analysis
  *   isAnalyzing          {boolean}  - True while waiting for the AI response
  *   analysis             {string}   - Raw markdown text returned by Claude
- *   activeTab            {string}   - "detail" | "intel" | "spam"
+ *   activeTab            {string}   - "detail" | "intel" | "spam" | "help"
  *   onTabChange          {Function} - Switches the visible tab
+ *   helpTopic            {string}   - "run" | "tips"
+ *   onHelpTopicChange    {Function} - Switches the visible help topic
  *   selectedNode         {object}   - Node selected on the graph, or null
  *   onPinToggle          {Function} - Pin or unpin the selected entity
  *   onExpand             {Function} - Expand a module's collection
@@ -35,6 +38,7 @@
 import { useState } from "react";
 import SpamChecker from "./SpamChecker";
 import DetailView from "./DetailView";
+import HelpPanel from "./HelpPanel";
 
 /**
  * Split Claude's markdown response on ## headers into labelled sections.
@@ -71,6 +75,8 @@ export default function TargetDossier({
   analysis,
   activeTab,
   onTabChange,
+  helpTopic,
+  onHelpTopicChange,
   selectedNode,
   onPinToggle,
   onExpand,
@@ -103,6 +109,7 @@ export default function TargetDossier({
           { id: "detail", label: "Detail view" },
           { id: "intel",  label: `Intel workspace${pinnedItems.length ? ` (${pinnedItems.length})` : ""}` },
           { id: "spam",   label: "Spam checker" },
+          { id: "help",   label: "Help" },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -128,6 +135,13 @@ export default function TargetDossier({
       <div className={`dossier-scroll ${activeTab === "spam" ? "" : "is-hidden"}`}>
         <SpamChecker />
       </div>
+
+      {/* Help tab */}
+      {activeTab === "help" && (
+        <div className="dossier-scroll">
+          <HelpPanel topic={helpTopic} onTopicChange={onHelpTopicChange} />
+        </div>
+      )}
 
       {/* Scrollable workspace content — Intel tab */}
       {activeTab === "intel" && (

@@ -2,10 +2,14 @@
 # Opens a real Chrome browser (not headless) and runs searches on Google.
 # Using a visible browser lets the user solve CAPTCHAs manually if Google blocks us.
 # All queries share one browser session to avoid repeated startups.
+# Results from every query are merged and ranked, so the best matches come first.
 
 import time
 import urllib.parse
+
+import requests
 from modules.base import BaseModule
+from modules.search.ranking import build_response, url_key
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -17,9 +21,15 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 
 # CSS selectors for different parts of the Google results page
-RESULTS_SELECTOR = "div.g, div.tF2Cxc, div.v7W49e, div.MjjYud > div"
+# (div.v7W49e is left out: it wraps the whole result list, not a single result)
+RESULTS_SELECTOR = "div.g, div.tF2Cxc, div.MjjYud > div"
 WAIT_SELECTOR    = "div.g, #search, #rso"
 CAPTCHA_SELECTOR = "form#captcha-form, #recaptcha, div.g-recaptcha, input#captcha"
+
+CAPTCHA_ERROR = "Google showed a CAPTCHA that wasn't solved in time"
+
+# Google wraps result links in an encrypted redirect (google.com/goto?url=...)
+REDIRECT_LINK = "google.com/goto?"
 
 # Search query templates — {name}, {username}, {email} are filled at runtime
 NAME_QUERIES = [
@@ -69,17 +79,17 @@ def _build_driver() -> webdriver.Chrome:
 
 
 def _extract(el) -> dict | None:
-    """Pull title, URL, and snippet text out of a single search result element."""
+    """Pull title, link, and snippet text out of a single search result element."""
     try:
-        h3s = el.find_elements(By.TAG_NAME, "h3")
-        title = h3s[0].text if h3s else ""
-
-        url = ""
-        for a in el.find_elements(By.TAG_NAME, "a"):
-            href = a.get_attribute("href") or ""
-            if href.startswith("http") and "google.com" not in href:
-                url = href
-                break
+        # A result's title sits inside its link, which skips other links on the card
+        # and unlinked headings like the knowledge panel's "Description"
+        links = el.find_elements(By.XPATH, ".//a[.//h3]")
+        if not links:
+            return None
+        title = links[0].find_element(By.TAG_NAME, "h3").text
+        url = links[0].get_attribute("href") or ""
+        if not url.startswith("http") or ("google.com" in url and REDIRECT_LINK not in url):
+            return None
 
         # Try several snippet CSS classes — Google changes these frequently
         snippet = ""
@@ -99,6 +109,21 @@ def _extract(el) -> dict | None:
     return None
 
 
+def _resolve_link(url: str) -> str:
+    """Read a wrapped link's real address from its redirect, without opening that page.
+
+    Falls back to the wrapped link, which still opens the page but ranks less well.
+    """
+    if REDIRECT_LINK not in url:
+        return url
+    try:
+        location = requests.get(url, allow_redirects=False, timeout=5).headers.get("Location", "")
+    except requests.RequestException:
+        return url
+    # A block redirects back to google.com/sorry rather than to the result
+    return location if location.startswith("http") and "google.com" not in location else url
+
+
 def _search_one(driver, query: str, label: str, captcha_wait: int = 90) -> list:
     """Navigate to one Google search page and return all extracted results."""
     encoded = urllib.parse.quote_plus(query)
@@ -113,26 +138,49 @@ def _search_one(driver, query: str, label: str, captcha_wait: int = 90) -> list:
                 EC.presence_of_element_located((By.CSS_SELECTOR, CAPTCHA_SELECTOR))
             )
         except Exception:
-            return [{"category": label, "error": "CAPTCHA timeout"}]
+            return [{"category": label, "error": CAPTCHA_ERROR}]
 
     try:
         WebDriverWait(driver, 15).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, WAIT_SELECTOR))
         )
     except Exception:
-        return []
+        return [{
+            "category": label,
+            "error": f"No results page loaded (got '{driver.title}' at {driver.current_url})",
+        }]
 
     # Scroll down to trigger lazy-loaded results
     for _ in range(2):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(1)
 
+    # The selectors can match a result and its wrapper, so count each page only once.
+    # Elements come back in page order, which gives us Google's own ranking.
     results = []
+    seen = set()
     for el in driver.find_elements(By.CSS_SELECTOR, RESULTS_SELECTOR):
         data = _extract(el)
-        if data:
+        # Checking the raw link first avoids resolving the same result twice
+        if not data or data["url"] in seen:
+            continue
+        seen.add(data["url"])
+
+        data["url"] = _resolve_link(data["url"])
+        if url_key(data["url"]) not in seen:
+            seen.add(url_key(data["url"]))
             data["category"] = label
+            data["position"] = len(results) + 1
             results.append(data)
+
+    # Linked headings we couldn't read mean Google's layout changed, not that nothing was found
+    if not results:
+        headings = len(driver.find_elements(By.CSS_SELECTOR, "a h3"))
+        if headings:
+            return [{
+                "category": label,
+                "error": f"Couldn't read the {headings} results on the page — Google's layout may have changed",
+            }]
 
     time.sleep(1)  # small delay between queries to avoid rate-limiting
     return results
@@ -172,7 +220,10 @@ class GoogleModule(BaseModule):
                 hits = _search_one(driver, q, label)
                 all_results.extend(hits)
                 print(f"[Google] {label}: {len(hits)} results")
+                # Google blocks the whole browser, so later queries would each wait out a CAPTCHA too
+                if any(hit.get("error") == CAPTCHA_ERROR for hit in hits):
+                    break
         finally:
             driver.quit()
 
-        return {"total": len(all_results), "results": all_results}
+        return build_response(all_results, target)
